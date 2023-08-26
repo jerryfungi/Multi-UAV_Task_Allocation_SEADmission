@@ -8,7 +8,7 @@ import dubins
 
 
 class GA_SEAD(object):
-    def __init__(self, targets, pop=300):
+    def __init__(self, targets, population_size=300, crossover_num=None, mutation_num=None, elitism_num=None, heading_discretization=10):
         self.targets = targets
         # global message
         self.uav_id = []
@@ -18,20 +18,21 @@ class GA_SEAD(object):
         self.uav_position = []
         self.depots = []
         # GA parameters
-        self.initial_population_size = pop
-        self.population_size = pop
-        self.crossover_num = 66
-        self.mutation_num = 32
+        self.total_population_size = population_size
+        self.population_size = population_size
+        self.elitism_num = elitism_num if elitism_num else 2
+        self.crossover_num = crossover_num if crossover_num else round((self.population_size - self.elitism_num) * 0.67)
+        self.mutation_num = mutation_num if mutation_num else self.population_size - self.crossover_num - self.elitism_num
         self.mutation_prob = [0.25, 0.25, 0.25, 0.25]
         self.crossover_prob = [0.5, 0.5]
-        self.elitism_num = 2
         self.lambda_1 = 0
         self.lambda_2 = 10
         # the precomputed matrix for optimization
         self.uavType_for_missions = []
         self.tasks_status = [3 for _ in range(len(self.targets))]
         self.cost_matrix = []
-        self.discrete_heading = [_ for _ in range(0, 36)]  # N heading = 10
+        self.heading_discretization = heading_discretization
+        self.discrete_heading = [int(angle/heading_discretization) for angle in range(0, 360, heading_discretization)]
         self.remaining_targets = []
         self.task_amount_array = []
         self.task_index_array = []
@@ -272,7 +273,6 @@ class GA_SEAD(object):
             mutate_task_based = []
             for i in range(len(task_based_gene)):  # copy chromosome
                 mutate_task_based.append(task_based_gene[i][:])
-            # mutate_task_based = copy.deepcopy(task_based_gene)
             for i, sequence in enumerate(task_sequence):
                 mutate_task_based[self.task_index_array[mut_task] + i][3:] = \
                     task_based_gene[self.task_index_array[mut_task] + sequence][3:]
@@ -288,11 +288,10 @@ class GA_SEAD(object):
         fitness_ranking = sorted(range(len(fitness)), key=lambda u: fitness[u], reverse=True)[:self.elitism_num]
         return [population[_] for _ in fitness_ranking]
 
-    def information_setting(self, information, population):
+    def information_setting(self, information, population, distributed=False):
         lost_agent, build_graph = False, False
         terminated_tasks, new_target = sorted(information[8], key=lambda u: u[1]), sorted(information[9])
         clear_task, new_task = [], []
-        # print(information[7])
         if terminated_tasks:  # check terminated tasks
             for task in terminated_tasks:
                 if self.tasks_status[task[0] - 1] == 3 - task[1] + 1:
@@ -337,8 +336,8 @@ class GA_SEAD(object):
                 for b in self.discrete_heading:
                     for c in range(1, len(self.targets) + 1):
                         for d in self.discrete_heading:
-                            source_point = self.targets[a - 1] + [b * 10 * np.pi / 180]
-                            end_point = self.targets[c - 1] + [d * 10 * np.pi / 180]
+                            source_point = self.targets[a - 1] + [b * self.heading_discretization * np.pi / 180]
+                            end_point = self.targets[c - 1] + [d * self.heading_discretization * np.pi / 180]
                             if source_point == end_point:
                                 end_point[-1] += 1e-5
                             for u in range(len(self.uav_id)):
@@ -347,7 +346,7 @@ class GA_SEAD(object):
         # update real time information in graph
         for a in range(1, len(self.targets) + 1):
             for b in self.discrete_heading:
-                point = self.targets[a - 1] + [b * 10 * np.pi / 180]
+                point = self.targets[a - 1] + [b * self.heading_discretization * np.pi / 180]
                 for u in range(len(self.uav_id)):
                     distance = dubins.shortest_path(self.uav_position[u], point, self.uav_Rmin[u]).path_length()
                     self.cost_matrix[u][0][0][a][b] = distance
@@ -358,7 +357,7 @@ class GA_SEAD(object):
             self.cost_matrix[u][0][0][0][0] = distance
 
         # ga parameters
-        self.population_size = round(self.initial_population_size / len(self.uav_id))
+        self.population_size = round(self.total_population_size / len(self.uav_id)) if distributed else self.total_population_size
         self.crossover_num = round((self.population_size - self.elitism_num) * 0.67)
         self.mutation_num = self.population_size - self.crossover_num - self.elitism_num
         self.lambda_1 = 1 / (sum(self.uav_velocity))
@@ -410,9 +409,9 @@ class GA_SEAD(object):
             population.extend([elite for elite in information[7] if len(elite[0]) == sum(self.tasks_status)])
         return population
 
-    def run_GA(self, iteration, uav_message, population=None):
+    def run_GA(self, iteration, uav_message, population=None, distributed=False):
         a = []
-        population = self.information_setting(uav_message, population)
+        population = self.information_setting(uav_message, population, distributed)
         residual_tasks = sum(self.tasks_status)
         if residual_tasks == 0:
             empty = True
@@ -440,11 +439,11 @@ class GA_SEAD(object):
         else:
             return [[] for _ in range(5)], 0, [], 0
 
-    def run_GA_time_period_version(self, time_interval, uav_message, population=None, update=True):
+    def run_GA_time_period_version(self, time_interval, uav_message, population=None, update=True, distributed=False):
         iteration = 0
         start_time = time.time()
         if update:
-            population = self.information_setting(uav_message, population)
+            population = self.information_setting(uav_message, population, distributed)
         residual_tasks = sum(self.tasks_status)
         if residual_tasks == 0:
             empty = True
@@ -504,9 +503,12 @@ class GA_SEAD(object):
                     time_[a].append(distance / self.uav_velocity[c])
                 except IndexError:
                     pass
-            arrow_.extend(
-                [[route_[0][arr], route_[1][arr], route_[0][arr + 100], route_[1][arr + 100]]
-                 for arr in range(0, len(route_[0]), 15000)])
+            try:
+                arrow_.extend(
+                    [[route_[0][arr], route_[1][arr], route_[0][arr + 100], route_[1][arr + 100]]
+                     for arr in range(0, len(route_[0]), 15000)])
+            except:
+                pass
             print(state_list)
             return distance, route_, arrow_
 
@@ -590,127 +592,18 @@ class GA_SEAD(object):
 
 
 if __name__ == "__main__":
-    # targets_sites = [[3100, 2200], [500, 3700], [2300, 2500], [1100, 2100], [2800, 4100]]
-    # targets_sites = [[3100, 2200], [500, 3700], [2300, 2500], [2000, 3900], [4450, 3600], [4630, 4780], [1400, 4500],
-    #                  [3300, 3415], [1640, 1700], [4230, 1700], [500, 2200], [3000, 4500], [5000, 2810]]
-    # uavs = [[i for i in range(1, 12)], [1, 2, 3, 1, 3, 2, 1, 2, 3, 1, 2],
-    #         [70, 80, 90, 60, 100, 80, 75, 90, 85, 70, 65],
-    #         [200, 250, 300, 180, 300, 260, 225, 295, 250, 200, 170],
-    #         [[1000, 300, -np.pi], [1500, 700, np.pi / 2], [3000, 0, np.pi / 3], [1800, 400, -20 * np.pi / 180],
-    #         [2200, 280, 45 * np.pi / 180], [4740, 300, 140 * np.pi / 180], [4000, 100, 70 * np.pi / 180],
-    #          [3500, 450, -75 * np.pi / 180], [5000, 900, -115 * np.pi / 180], [2780, 500, -55 * np.pi / 180],
-    #          [4000, 600, 85 * np.pi / 180]],
-    #         [[0, 0, -np.pi / 2] for _ in range(11)]]
-    # targets_sites = [[5, 40], [40, 70], [80, 25]]
-    # targets_sites = [[3850, 650], [3900, 4700], [500, 1500], [1000, 2750], [4450, 3600], [2800, 3900], [800, 3600]]
-    # targets_sites = [[4550, 650], [500, 1500], [1000, 2750], [4450, 3600], [4630, 4780], [800, 3600],
-    #                  [3300, 2860], [2000, 2000], [3650, 1700], [2020, 3020]]
     targets_sites = [[500, 1500], [2000, 4500], [3000, 1500]]
-    # targets_sites = [[random.randint(-5000, 5000), random.randint(0, 5000)] for _ in range(20)]
-    # terminal = [[-500, 1200, np.pi / 2], [0, 1200, np.pi / 2], [500, 1200, np.pi / 2]]
-    # terminal = [[-500, 1200, np.pi / 2], [0, 1200, np.pi / 2], [500, 1200, np.pi / 2], [1000, 1200, np.pi / 2]]
-    # uavs = [[1, 2, 3, 4], [1, 2, 3, 2], [25, 15, 35, 40], [75, 50, 100, 100],
-    #         [[-500, 0, np.pi / 2], [0, 0, np.pi / 2], [500, 0, np.pi / 2], [1000, 0, np.pi / 2]], terminal,
-    #         [], [], [], []]
-    # uavs = [[1, 2, 3], [1, 2, 3], [25, 15, 35], [75, 50, 100],
-    #         [[-500, 0, np.pi / 2], [0, 0, np.pi / 2], [500, 0, np.pi / 2]], terminal,
-    #         [], [], [], []]
-    uavs = [[1, 2, 3], [1, 1, 1], [70, 80, 90], [200, 250, 300],
-            [[700, 1200, -np.pi], [1500, 700, np.pi / 2], [3600, 1000, np.pi / 3]],
-            [[2500, 4500, np.pi / 2] for _ in range(3)],
-            [], [], [], []]
-    # uavs = [[1, 2, 3], [2, 2, 2], [3, 4, 5], [5, 7.5, 10],
-    #         [[20, 100, -np.pi / 2], [40, 100, -np.pi / 2], [60, 100, -np.pi / 2]],
-    #         [[20, 0, -np.pi / 2], [40, 0, -np.pi / 2], [60, 0, -np.pi / 2]],
-    #         [], [], [], []]
-    # uavs = [[1, 2, 3, 4, 5, 6], [1, 2, 3, 2, 1, 2], [70, 80, 90, 60, 100, 80], [200, 250, 300, 180, 300, 260],
-    #         [[500, 300, -60*np.pi/180], [1500, 700, 90*np.pi/180], [200, 1100, 135*np.pi/180],
-    #          [3500, 120, 20*np.pi/180], [2 00, 4600, -45*np.pi/180], [4740, 2500, 115*np.pi/180]],
-    #         [[5000, 1000, 0] for _ in range(6)],
-    #         [], [], [], []]
-    # uavs = [[i for i in range(1, 13)], [2, 2, 3, 1, 1, 3, 1, 2, 2, 1, 2, 2],
-    #         [70, 80, 90, 60, 100, 80, 75, 90, 85, 70, 65, 50],
-    #         [200, 250, 300, 180, 300, 260, 225, 295, 250, 200, 170, 150],
-    #         [[0, 3770, 0 * np.pi / 180], [1500, 700, 90 * np.pi / 180], [200, 900, 135 * np.pi / 180],
-    #          [1800, 4500, -20 * np.pi / 180], [200, 2800, 45 * np.pi / 180], [4740, 3000, 140 * np.pi / 180],
-    #          [350, 120, 70 * np.pi / 180], [3500, 4500, -75 * np.pi / 180], [5000, 2000, -115 * np.pi / 180],
-    #          [2780, 5000, -55 * np.pi / 180], [400, 4400, 85 * np.pi / 180], [2040, 300, 65 * np.pi / 180]],
-    #         [[3000, 0, -135 * np.pi / 180] for _ in range(12)],
-    #         [], [], [], []]
-    # ga = GA_SEAD(targets_sites[:4], 100)
-    # uavs = [[row[j] for j in range(3)] for row in uavs] + [[], [], [], []]
-    # ga = GA_SEAD(targets_sites[:7], 100)
-    # uavs = [[row[j] for j in range(11)] for row in uavs] + [[], [], [[4, 1], [5, 1], [9, 1], [9, 2], [8, 1], [8, 2], [13, 1]], []]
-    # ga = GA_SEAD(targets_sites, 300)
-    # uavs = uavs + [[], [], [[4, 1], [5, 1], [9, 1], [9, 2], [8, 1], [8, 2], [13, 1]], []]
-    # targets = [[3850, 1650], [3900, 4700], [2000, 2050], [4450, 3600], [2800, 3900], [800, 3600]]
-    # uavs = [[1, 2, 3, 4, 5, 6], [1, 2, 3, 2, 1, 2], [70, 80, 90, 60, 100, 80], [200, 250, 300, 180, 300, 260],
-    #         [[500, 300, -60 * np.pi / 180], [1500, 700, 90 * np.pi / 180], [200, 1100, 135 * np.pi / 180],
-    #          [3500, 120, 20 * np.pi / 180], [200, 4600, -45 * np.pi / 180], [4740, 2500, 115 * np.pi / 180]],
-    #         [[5000, 1000, 0] for _ in range(6)],
-    #         [], [], [], []]
+    uavs = [[1, 2, 3],  # UAV ID
+            [1, 2, 3],  # UAV type
+            [70, 80, 90],  # Cruise speed
+            [200, 250, 300],  # Minimum turning radii
+            [[700, 1200, -np.pi], [1500, 700, np.pi / 2], [3600, 1000, np.pi / 3]],  # initial states of UAVs
+            [[2500, 4500, np.pi / 2] for _ in range(3)],  # Base positions of UAVs
+            [],  # ignore
+            [],  # ignore
+            [],  # tasks completed
+            []]  # new targets
+
     ga = GA_SEAD(targets_sites, 100)
-    start = time.time()
-    solution, fitness_, ga_population, a = ga.run_GA(100, uavs)
-    # uavs[8].append([3, 1])
-    # solution, fitness_, ga_population, a = ga.run_GA(100, uavs, ga_population)
-    # solution, fitness_, ga_population, a = ga.run_GA(100, uavs, ga_population)
-    print(f'process time: {time.time() - start}')
-    print(1/fitness_)
-    # print(solution)
-    # print('second--------------------------------')0
-    # uavs = [[1, 2, 3], [1, 2, 3], [70, 80, 90], [200, 250, 300],
-    #         [[700, 1200, -np.pi], [1500, 700, np.pi / 2], [3600, 1000, np.pi / 3]],
-    #         [[2500, 4500, np.pi / 2] for _ in range(3)],
-    #         [], [], [[1, 1], [1, 2], [2, 1], [2, 2], [3, 1], [3, 2], [4, 1], [4, 2]], []]
-    # solution, fitness_, ga_population, a = ga.run_GA(100, uavs, ga_population)
-    # print(solution)
-    # uavs = [[1, 2, 3], [1, 2, 3], [70, 80, 90], [200, 250, 300],
-    #         [[700, 1200, -np.pi], [1500, 700, np.pi / 2], [3600, 1000, np.pi / 3]],
-    #         [[2500, 500, -np.pi / 2] for _ in range(3)],
-    #         [], [], [[2, 1]], []]
-    # solution, fitness_, ga_population, a = ga.run_GA(100, uavs, ga_population)
-    # print(solution)
-    # ga.plot_result([[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], [1, 3, 1, 4, 3, 1, 2, 3, 4, 4, 2, 2],
-    #                 [1, 1, 2, 1, 2, 3, 1, 3, 2, 3, 2, 3], [2, 1, 3, 1, 3, 2, 1, 2, 3, 2, 3, 2],
-    #                 [5, 11, 24, 11, 3, 13, 25, 13, 18, 14, 24, 23]])
-    # solution = [[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21],
-    #             [3, 3, 3, 7, 6, 7, 7, 2, 4, 4, 6, 2, 6, 4, 5, 1, 5, 2, 1, 5, 1],
-    #             [1, 2, 3, 1, 1, 2, 3, 1, 1, 2, 2, 2, 3, 3, 1, 1, 2, 3, 2, 3, 3],
-    #             [2, 3, 1, 5, 5, 2, 2, 5, 1, 3, 3, 3, 1, 2, 5, 6, 3, 5, 6, 1, 6],
-    #             [11, 19, 10, 2, 35, 12, 22, 35, 6, 6, 3, 0, 33, 34, 30, 25, 24, 22, 28, 29, 33]]
-    # solution =  [
-    #     [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30],
-    #     [2, 10, 5, 7, 10, 3, 8, 9, 4, 1, 3, 5, 2, 9, 7, 6, 10, 6, 6, 3, 8, 1, 2, 5, 1, 4, 9, 4, 7, 8],
-    #     [1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 1, 3, 2, 3, 3, 2, 2, 3, 3, 3, 2, 3, 3, 3, 3],
-    #     [7, 1, 10, 5, 3, 7, 12, 5, 9, 5, 12, 9, 2, 2, 2, 11, 1, 3, 1, 1, 3, 11, 7, 9, 11, 9, 10, 9, 2, 10],
-    #     [9, 25, 29, 20, 30, 16, 7, 3, 12, 22, 7, 4, 29, 8, 7, 28, 21, 34, 7, 24, 28, 26, 31, 0, 29, 19, 16, 26, 32, 6]]
-    # ga.plot_result(solution, a)
-    # uavs = [[1, 2, 3], [1, 2, 3], [70, 80, 70], [200, 250, 200],
-    #         [[0, 0, np.pi / 2], [50, 0, np.pi / 2], [100, 0, np.pi / 2]],
-    #         [[0, 0, -np.pi / 2], [50, 0, -np.pi / 2], [100, 0, -np.pi / 2]],
-    #         [], [], [[2, 1]], [[0, 4000]]]
-    # solution, fitness_, ga_population = ga.run_GA(100, uavs, ga_population)
-    # print(1 / fitness_)
-    # ga.plot_result(solution)
-    # tf = time.time()
-    # solution, fitness_value, ga_population = ga.run_GA(100, uavs, ga_population)
-    # solution, fitness_value, ga_population = ga.run_GA_time_period_version(1.5, uavs, ga_population)
-    # print(time.time() - tf)
-    # print(1 / fitness_value)
-    # ga.plot_result(solution)
-    # solution, fitness_value, ga_population = ga.run_GA_time_period_version(1.5, uavs, ga_population)
-    # print(1 / fitness_value)
-    # ga.plot_result(solution, curve)
-    # solution, fitness_value, ga_population = ga.run_GA_time_period_version(1.5, uavs, ga_population)
-    # print(1 / fitness_value)
-    # uavs_1 = [[1, 2, 3], [1, 2, 3], [25, 15, 35], [75, 50, 100],
-    #         [[-500, 0, np.pi / 2], [0, 0, np.pi / 2], [500, 0, np.pi / 2]], terminal, [], [], [[4, 1]], []]
-    # solution, fitness_value, ga_population = ga.run_GA_time_period_version(1, uavs_1, ga_population)
-    # uavs_1 = [[1, 2, 3], [1, 2, 3], [25, 15, 35], [75, 50, 100],
-    #           [[-500, 0, np.pi / 2], [0, 0, np.pi / 2], [500, 0, np.pi / 2]], terminal, [], [],
-    #           [[3, 2], [4, 2], [3, 1], [3, 1]], []]
-    # solution, fitness_value, ga_population = ga.run_GA_time_period_version(1, uavs_1, ga_population)
-    # print(1 / fitness_value)
-    # solution, fitness_value, ga_population = ga.run_GA_time_period_version(1, uavs, ga_population)
-    # print(1 / fitness_value)
+    solution, fitness_, ga_population, convergence = ga.run_GA(100, uavs)
+    ga.plot_result(solution, convergence)

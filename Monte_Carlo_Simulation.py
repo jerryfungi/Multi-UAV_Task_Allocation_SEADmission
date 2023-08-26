@@ -7,6 +7,7 @@ monte_carlo_runs = 5
 generation = 300
 population_size = 300
 
+
 def DGA(targets, uav_msg, queue, index, iteration, exchange_interval=100):
     share_list = [i for i in range(len(uav_msg[0])) if not i == index]
     dga = GA_SEAD(targets, population_size)

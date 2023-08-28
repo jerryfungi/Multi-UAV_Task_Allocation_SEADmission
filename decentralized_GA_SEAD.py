@@ -34,12 +34,16 @@ class DynamicSEADMissionSimulator(object):
         mission = GA_SEAD(self.targets_sites, 100)
         uavs = control2ga_queue.get()
         while True:
+            'optimization operation'
             solution, fitness_value, population = mission.run_GA_time_period_version(output_interval, uavs, population,
                                                                                      update, distributed=True)
-            ga2control_queue.put([fitness_value, solution])  # put the best solution to task execution thread
+            'transmit the best solution to the main process'
+            ga2control_queue.put([fitness_value, solution])
             if not control2ga_queue.empty():
-                uavs = control2ga_queue.get()  # get other uav information from task execution thread
+                'get the information of other UAVs from the main process'
+                uavs = control2ga_queue.get()
                 update = True
+                'disable the task allocation process'
                 if uavs == [44]:
                     break
             else:
@@ -127,36 +131,34 @@ class DynamicSEADMissionSimulator(object):
 
         start_time = time.time()
         while True:
-            # communication layer
-            #       broadcast
+            ' <<<<<<<<<<<<<<< Communication Phase >>>>>>>>>>>>>>> '
+            'receive solution from task allocation process'
             while not ga2control_queue.empty():
-                #       ga thread to task execution thread
                 fitness, best_solution = ga2control_queue.get()
 
+            'broadcast the information'
             if int(time.time() * 10) % int(interval * 10) == 0 and time.time() - previous_time_ >= interval / 1.01:
                 previous_time_ = time.time()
                 current_best_packet, pos = pack_broadcast_packet(fitness, best_solution, [x_n, y_n, theta_n])
-
                 packets.append(current_best_packet)
                 for q in broadcast_list:
                     u2u_communication[q].put(current_best_packet)
                 terminated_tasks, new_targets = [], []
                 receive_confirm = True
 
-            #       task execution thread to ga thread
+            'receive the information from the task allocation process'
             if int(time.time() * 10 % 10) == 6 and receive_confirm:
                 while not u2u_communication[uav.id - 1].empty():
                     packets.append(u2u_communication[uav.id - 1].get(timeout=1e-5))
-                # choose the solution which has the highest fitness value. (when it comes to the same fitness value,
-                #                                                            choose the solution of the smaller uav id)
                 to_ga_message, fix_target, at, nt = repack_packets2ga_thread(packets)
                 AT.extend(at)
                 NT.extend(nt)
                 to_ga_message[8], to_ga_message[9] = AT, NT
-
+                'check the unknown targets'
                 for target_found in to_ga_message[9]:
                     if target_found not in targets_sites:
                         targets_sites.append(target_found)
+                'task-locking mechanism'
                 if sum(fix_target) == 0:
                     control2ga_queue.put(to_ga_message)
                     AT, NT = [], []
@@ -167,45 +169,52 @@ class DynamicSEADMissionSimulator(object):
                         if task in to_ga_message[9]:
                             new_targets.pop(new_targets.index(task))
                     if update:
-                        path, target, desire_point_index = generate_path(
-                            sorted(packets, key=lambda f: f[6], reverse=True)[0][7], pos, path, target, desire_point_index)
+                        '''
+                        choose the solution with the highest fitness value (when it comes to the same fitness value, 
+                                                                        choose the solution with the smallest UAV ID)
+                        '''
+                        path, target, desire_point_index = \
+                            generate_path(sorted(packets, key=lambda f: f[6], reverse=True)[0][7],
+                                          pos, path, target, desire_point_index)
                     update = True
                 else:
                     update = False
-
                 packets.clear()
                 receive_confirm = False
 
-            # control layer
+            ' <<<<<<<<<<<<<<< Control Phase >>>>>>>>>>>>>>> '
             if path and time.time() - previous_time >= .1:
-                # back to the base or not
+                'back to the base or not'
                 if math.hypot(uav.depot[0] - x_n, uav.depot[1] - y_n) <= waypoint_radius and back_to_base and not return_pub:
                     print(f'UAV {uav.id} => mission completed: {np.round(time.time() - start_time, 3)} sec')
                     return_pub = True
                     control2ga_queue.put([44])
-                # identify the target is reached or not
+
+                'identify the target is reached or not'
                 if math.hypot(target[0][0] - x_n, target[0][1] - y_n) <= waypoint_radius and not into:
                     into = True
-                # 做完任務之條件
+                'the condition of the task completed'
                 if math.hypot(target[0][0] - x_n, target[0][1] - y_n) >= waypoint_radius and into:
                     if target[0][3:]:
                         terminated_tasks.append(target[0][3:])
                         print(f"UAV {uav.id} => Target {target[0][3]} {task_type[target[0][4] - 1]} finished: {np.round(time.time() - start_time, 3)} sec")
-                        print(uav.id, target[0][3:], time.time())
                         del target[0]
                         task_confirm = False
                         into = False
-                # fix the target and path or not
+
+                'activate the task-locking mechanism or not'
                 if math.hypot(target[0][0] - x_n, target[0][1] - y_n) <= 2 * uav.Rmin:
                     if target[0][3:]:
                         task_confirm = True
                     else:
                         back_to_base = True
+
+                'return successfully and disarm the UAV'
                 if (back_to_base and v <= 0.01) and not failure:
                     u2g.put([44, uav.id])
                     break
 
-                # path following algorithm
+                'path-following algorithm'
                 future_point = np.array(
                     [x_n + uav.velocity * cos(theta_n) * recede_horizon,
                      y_n + uav.velocity * sin(theta_n) * recede_horizon])
@@ -224,28 +233,27 @@ class DynamicSEADMissionSimulator(object):
                     vb = b - a
                     projection = np.dot(va, vb) / np.dot(vb, vb) * vb
                     normal_point = a + projection
-                    # check the normal in line or not
+                    'check the normal on line or not'
                     if max(path[i][0], path[i + 1][0]) > normal_point[0] \
                             > min(path[i][0], path[i + 1][0]) and max(path[i][1], path[i + 1][1]) > \
                             normal_point[1] > min(path[i][1], path[i + 1][1]):
                         normal_point = normal_point[:]
                     else:
                         normal_point = b
-                    # update distance
                     d = np.linalg.norm(va - (normal_point - a))
                     if d < world_record:
                         world_record = d
                         desire_point = normal_point
                         proj_value = np.dot(va, desire_point - np.array([x_n, y_n]))
                         desire_point_index = i
-                # control to seek a target
+                'control to seek a waypoint'
                 angle_between_two_points = angle_between((x_n, y_n), desire_point)
                 relative_angle = angle_between_two_points - theta_n
                 error_of_heading = relative_angle if abs(relative_angle) <= np.pi else \
                     (-relative_angle / abs(relative_angle)) * (relative_angle + 2 * np.pi)
-
                 difference = error_of_heading - e_previous if e_previous else 0
-                u = 3 * error_of_heading + 10 * difference  # yaw_rate_command (PD control)
+                'control input for steering (PD control)'
+                u = 3 * error_of_heading + 10 * difference
                 if u > v / uav.Rmin:
                     u = v / uav.Rmin
                 elif u < -v / uav.Rmin:
@@ -256,23 +264,26 @@ class DynamicSEADMissionSimulator(object):
                     v_command, u = 0, 0
                 else:
                     v_command = uav.velocity
-
                 dt = time.time() - previous_time if not previous_time == 0 else .1
                 previous_time = time.time()
+                'update the UAV states using velocity and yaw rate commands'
                 x_n, y_n, theta_n, v, headingRate = step_pid(v, headingRate, x_n, y_n, theta_n, u, v_command, dt)
 
+                'send the location to the GCS'
                 if plot_index % 3 == 0:
                     u2g.put([0, uav.id, x_n, y_n, time.time()])
                 plot_index += 1
 
-                # dynamic environments
+                'dynamic environments'
                 if uav_failure:
-                    if time.time() - start_time >= uav_failure:  # agent lost
+                    'UAV failure'
+                    if time.time() - start_time >= uav_failure:
                         print(f'UAV {uav.id} failure --- {np.round(time.time() - start_time, 3)}')
                         u2g.put([223, uav.id, x_n, y_n])
                         u2g.put([44, uav.id])
                         break
                 if unknown_targets:
+                    'unknown targets'
                     for tt in unknown_targets:
                         if np.linalg.norm(np.array(tt) - np.array([x_n, y_n])) <= 400 \
                                 and tt not in targets_sites and uav.type != 3:

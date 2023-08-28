@@ -154,14 +154,14 @@ class PSO_vrp(object):
 
     def plot_best(self, best_solution):
         print(f"best particle = {best_solution[1]}")
-        x = [[uavs_sites[_][0]] for _ in range(self.uav_num)]
-        y = [[uavs_sites[_][1]] for _ in range(self.uav_num)]
+        x = [[self.uavs_sites[_][0]] for _ in range(self.uav_num)]
+        y = [[self.uavs_sites[_][1]] for _ in range(self.uav_num)]
         for j in range(self.uav_num):
             for i in range(1, len(best_solution[2][j])-1):
                 x[j].extend([self.targets_sites[best_solution[2][j][i]-1][0]])
                 y[j].extend([self.targets_sites[best_solution[2][j][i]-1][1]])
-            x[j].extend([uavs_sites[j][0]])
-            y[j].extend([uavs_sites[j][1]])
+            x[j].extend([self.uavs_sites[j][0]])
+            y[j].extend([self.uavs_sites[j][1]])
         print(f"route: {best_solution[2]}")
         plt.subplot(121)
         for i in range(len(x)):

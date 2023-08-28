@@ -373,7 +373,7 @@ class GA_SEAD(object):
         for k, times in enumerate(self.tasks_status):
             self.target_index_array.append(self.target_index_array[k] + times)
 
-        # modify population
+        # revise population
         if population:
             for elite in information[7]:
                 for task in clear_task:
@@ -574,10 +574,6 @@ class GA_SEAD(object):
             for arrow in arrow_state[i]:
                 plt.arrow(arrow[0], arrow[1], arrow[2] - arrow[0], arrow[3] - arrow[1], width=16, color=color_style[i])
         plt.plot([x[0] for x in self.uav_position], [x[1] for x in self.uav_position], 'k^', markerfacecolor='none', markersize=8)
-        # i = 1
-        # for pos in self.uav_position:
-        #     plt.plot(pos[0], pos[1], '^', color=color_style[i-1], markerfacecolor='none', markersize=8, label=f'UAV {i}')
-        #     i += 1
         plt.plot([b[0] for b in self.targets], [b[1] for b in self.targets], 'ms', label='Target position',
                  markerfacecolor='none', markersize=6)
         plt.plot(self.depots[0][0], self.depots[0][1], 'r*', markerfacecolor='none', markersize=10, label='Base')

@@ -208,8 +208,8 @@ class GA_vrp(object):
         # print(f"best gene = {best_solution}")
         route = [[0] for _ in range(self.uav_num)]
         dist = [0 for _ in range(self.uav_num)]
-        x = [[uavs_sites[_][0]] for _ in range(self.uav_num)]
-        y = [[uavs_sites[_][1]] for _ in range(self.uav_num)]
+        x = [[self.uavs_sites[_][0]] for _ in range(self.uav_num)]
+        y = [[self.uavs_sites[_][1]] for _ in range(self.uav_num)]
         for j in range(self.uav_num):
             pre_pos = 0
             for i in range(len(best_solution[0])):
@@ -222,8 +222,8 @@ class GA_vrp(object):
             for k in range(1, len(route[j])-1):
                 x[j].extend([self.targets_sites[route[j][k]-1][0]])
                 y[j].extend([self.targets_sites[route[j][k]-1][1]])
-            x[j].extend([uavs_sites[j][0]])
-            y[j].extend([uavs_sites[j][1]])
+            x[j].extend([self.uavs_sites[j][0]])
+            y[j].extend([self.uavs_sites[j][1]])
         # print(f"route: {route}")
         plt.subplot(121)
         for i in range(len(x)):

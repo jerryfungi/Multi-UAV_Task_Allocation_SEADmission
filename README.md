@@ -37,6 +37,24 @@ dynamic_SEAD_mission.start_simulation(realtime_plot=True, unknown_targets=[[600,
 ### GA for static SEAD missions
 ```python
 from GA_SEAD_process import *
+
+targets_sites = [[500, 1500], [2000, 4500], [3000, 1500]]
+uavs = [[1, 2, 3],  # UAV ID
+        [1, 2, 3],  # UAV type
+        [70, 80, 90],  # Cruise speed
+        [200, 250, 300],  # Minimum turning radii
+        [[700, 1200, -np.pi], [1500, 700, np.pi / 2], [3600, 1000, np.pi / 3]],  # initial states of UAVs
+        [[2500, 4500, np.pi / 2] for _ in range(3)],  # Base positions of UAVs
+        [],  # ignore
+        [],  # ignore
+        [],  # tasks completed
+        []]  # new targets
+
+population_size = 100
+iteration = 100
+mission = GA_SEAD(targets_sites, population_size)
+solution, fitness, ga_population, convergence = mission.run_GA(iteration, uavs)
+mission.plot_result(solution, convergence)
 ```
 #### Result
 

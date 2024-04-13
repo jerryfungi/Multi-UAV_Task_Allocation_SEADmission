@@ -561,6 +561,9 @@ class GA_SEAD(object):
             plt.plot([b for b in range(1, len(curve) + 1)], curve, '-')
             print(len(curve))
             plt.grid()
+            plt.title("Convergence", font0)
+            plt.xlabel("Iteration", font0)
+            plt.ylabel("Cost", font0)
             # plt.ylabel('E ( $\mathregular{J_i}$ / $\mathregular{J_1}$ )', fontsize=12)
             plt.subplot(121)
         else:
@@ -581,6 +584,7 @@ class GA_SEAD(object):
             plt.text(t[0]+100, t[1]+100, f'Target {self.targets.index(t)+1}', font1)
         plt.text(self.depots[0][0]-100, self.depots[0][1]-200, 'Base', font2)
         plt.legend(loc='upper right', prop=font)
+        plt.title("Routes", font0)
         plt.xlabel('East, m', font0)
         plt.ylabel('North, m', font0)
         # plt.grid()

@@ -271,7 +271,7 @@ class DynamicSEADMissionSimulator(object):
 
                 'send the location to the GCS'
                 if plot_index % 3 == 0:
-                    u2g.put([0, uav.id, x_n, y_n, time.time()])
+                    u2g.put([0, uav.id, x_n, y_n, time.time(), theta_n])
                 plot_index += 1
 
                 'dynamic environments'
@@ -293,6 +293,7 @@ class DynamicSEADMissionSimulator(object):
 
     def start_simulation(self, realtime_plot=False, unknown_targets=None, uav_failure=None):
         uav_num = len(self.uavs[0])
+        target_num = len(targets_sites)
         u2u_nodes = [mp.Queue() for _ in range(uav_num)]
         main2task_allocation = [mp.Queue() for _ in range(uav_num)]
         task_allocation2main = [mp.Queue() for _ in range(uav_num)]
@@ -304,14 +305,10 @@ class DynamicSEADMissionSimulator(object):
         task_allocation_proccess = [mp.Process(target=self.task_allocation_process, args=(task_allocation2main[n], main2task_allocation[n])) for n in range(uav_num)]
         ' Control and Communication '
         main_process = [mp.Process(target=self.main_process, args=(UAVs[n], u2u_nodes, task_allocation2main[n], main2task_allocation[n], GCS, unknown_targets, uav_failure[n])) for n in range(uav_num)]
-        ' Start the programs of each UAV '
-        for a in range(uav_num):
-            main_process[a].start()
-            task_allocation_proccess[a].start()
-        start_time = time.time()
-        print("Mission start !!")
 
         position = [[[UAVs[_].x0, UAVs[_].y0]] for _ in range(uav_num)]
+        x, y, yaw = [[UAVs[_].x0] for _ in range(uav_num)], [[UAVs[_].y0] for _ in range(uav_num)], \
+                      [UAVs[_].theta0 for _ in range(uav_num)]
         distance = [0 for _ in range(uav_num)]
         alive, completed = [1 for _ in range(uav_num)], [0 for _ in range(uav_num)]
         found_target, new_target_index, failures = [], [], [0 for _ in range(uav_num)]
@@ -322,43 +319,75 @@ class DynamicSEADMissionSimulator(object):
         font1 = {'family': 'Times New Roman', 'weight': 'normal', 'color': 'm', 'size': 8}
         font2 = {'family': 'Times New Roman', 'weight': 'normal', 'color': 'r', 'size': 8}
         font3 = {'family': 'Times New Roman', 'weight': 'normal', 'color': 'b', 'size': 8}
-        font4 = {'family': 'Times New Roman', 'weight': 'normal', 'color': '#DC143C', 'size': 8}
+
+        origin_plot_list = [[p[0] for p in self.uavs[4]], [p[1] for p in self.uavs[4]]]
+        targets_plot_list = [[p[0] for p in targets_sites], [p[1] for p in targets_sites]]
+        failure_uav_list = []
+
+        theta = np.arange(0, 2 * np.pi, 0.1)
+        fuselage = np.array([150 * np.cos(theta), 40 * np.sin(theta)])
+        wing = 40 * np.array([[-0.5, -0.5, 0.5, 0.5, -0.5], [-6, 6, 6, -6, -6]])
+        rotation_translation = lambda angle, pos, bias_x, bias_y: np.array(
+            [np.add(pos[0] * np.cos(angle) + pos[1] * np.sin(angle), bias_x),
+             np.add(-pos[0] * np.sin(angle) + pos[1] * np.cos(angle), bias_y)])
+
+        ' Start the programs of each UAV '
+        for a in range(uav_num):
+            main_process[a].start()
+            task_allocation_proccess[a].start()
+        start_time = time.time()
+        print("Mission start !!")
 
         ' Receive data from all agents '
         if realtime_plot:
-            plt.plot([x[0] for x in self.uavs[4]], [x[1] for x in self.uavs[4]], 'k^',
-                     markerfacecolor='none', markersize=8)
-            plt.plot([b[0] for b in targets_sites], [b[1] for b in targets_sites], 'ms', label='Target position',
-                     markerfacecolor='none', markersize=6)
-            for h in range(uav_num):
-                plt.text(self.uavs[4][h][0] - 100, self.uavs[4][h][1] - 200, f'UAV {self.uavs[0][h]}', fontsize='8')
-                plt.plot(self.uavs[5][h][0], self.uavs[5][h][1], 'r*', markerfacecolor='none', markersize=10)
-            for t in targets_sites:
-                plt.text(t[0] + 100, t[1] + 100, f'Target {targets_sites.index(t) + 1}', font1)
             plt.axis("equal")
         while alive != completed:
             surveillance = GCS.get()
-            if surveillance[0] == 222:
+            if surveillance[0] == 222:  # Unknown target found
                 found_target.append([surveillance[2], surveillance[3]])
                 new_target_index.append(len(position[0]))
-                if realtime_plot:
-                    plt.plot(surveillance[2], surveillance[3], 'bs', label='Target position', markerfacecolor='none', markersize=6)
-                    plt.text(found_target[-1][0] + 100, found_target[-1][1] + 100, f'Target {len(targets_sites) + len(new_target_index)}',
-                             font3)
                 print(
                     f"target {[surveillance[2], surveillance[3]]} found by UAV{surveillance[1]}: {np.round(time.time() - start_time, 3)} sec")
-            elif surveillance[0] == 223:
-                if realtime_plot:
-                    plt.plot(surveillance[2], surveillance[3], 'kx', markersize=6)
+            elif surveillance[0] == 223:  # UAV failure
                 failures[self.uavs[0].index(surveillance[1])] = len(position[0])
-            elif surveillance[0] == 44:
+                failure_uav_list.append([surveillance[2], surveillance[3]])
+            elif surveillance[0] == 44:  # UAV shut down
                 alive[self.uavs[0].index(surveillance[1])] = 0
             else:
                 index = self.uavs[0].index(surveillance[1])
-                if realtime_plot:
-                    plt.plot(surveillance[2], surveillance[3], 'o', color=color_style[index], markersize=1)
-                    plt.pause(1e-10)
                 position[index].append([surveillance[2], surveillance[3], surveillance[1]])
+                x[index].append(surveillance[2])
+                y[index].append(surveillance[3])
+                yaw[index] = surveillance[5]
+                if realtime_plot:
+                    plt.cla()
+                    plt.plot(origin_plot_list[0], origin_plot_list[1], 'k^',
+                             markerfacecolor='none', markersize=8)
+                    plt.plot(targets_plot_list[0], targets_plot_list[1], 'ms',
+                             label='Target position',
+                             markerfacecolor='none', markersize=6)
+                    for u in range(uav_num):
+                        plt.plot(x[u], y[u], '--', linewidth=1, color=color_style[u], label=f'UAV {self.uavs[0][u]}')
+                        plt.text(x[u][-1] + 100, y[u][-1] - 120, f'UAV {self.uavs[0][u]}',
+                                 fontsize='8')
+                        plt.plot(self.uavs[5][u][0], self.uavs[5][u][1], 'r*', markerfacecolor='none', markersize=10)
+                        # Draw uav
+                        yaw_angle = -yaw[u]
+                        uav_fuselage = rotation_translation(yaw_angle, fuselage, x[u][-1], y[u][-1])
+                        uav_wing = rotation_translation(yaw_angle, wing, x[u][-1], y[u][-1])
+                        plt.plot(uav_fuselage[0], uav_fuselage[1], 'k-', linewidth=1)
+                        plt.plot(uav_wing[0], uav_wing[1], 'k-', linewidth=1)
+                    for t in range(target_num):
+                        plt.text(targets_sites[t][0] + 100, targets_sites[t][1] + 100, f'Target {t + 1}', font1)
+                    i = 1
+                    for t in found_target:
+                        plt.plot(t[0], t[1], 'bs', label='Target position',
+                                 markerfacecolor='none', markersize=6)
+                        plt.text(t[0] + 100, t[1] + 100, f'Target {target_num + i}', font3)
+                        i += 1
+                    for fail in failure_uav_list:
+                        plt.plot(fail[0], fail[1], 'kx', markersize=6)
+                    plt.pause(1e-10)
         mission_time = time.time() - start_time
 
         ' Final trajectories plot '

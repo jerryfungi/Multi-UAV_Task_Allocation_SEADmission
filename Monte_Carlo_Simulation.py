@@ -1,6 +1,5 @@
 import multiprocessing as mp
 from GA_SEAD_process import *
-from PSO_SEAD import *
 
 ' Parameters '
 monte_carlo_runs = 5

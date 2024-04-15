@@ -579,10 +579,11 @@ class GA_SEAD(object):
         plt.plot([x[0] for x in self.uav_position], [x[1] for x in self.uav_position], 'k^', markerfacecolor='none', markersize=8)
         plt.plot([b[0] for b in self.targets], [b[1] for b in self.targets], 'ms', label='Target position',
                  markerfacecolor='none', markersize=6)
-        plt.plot(self.depots[0][0], self.depots[0][1], 'r*', markerfacecolor='none', markersize=10, label='Base')
+        plt.plot([x[0] for x in self.depots], [x[1] for x in self.depots], 'r*', markerfacecolor='none', markersize=10, label='Base')
         for t in self.targets:
             plt.text(t[0]+100, t[1]+100, f'Target {self.targets.index(t)+1}', font1)
-        plt.text(self.depots[0][0]-100, self.depots[0][1]-200, 'Base', font2)
+        for b in self.depots:
+            plt.text(b[0]-100, b[1]-200, f'Base', font2)
         plt.legend(loc='upper right', prop=font)
         plt.title("Routes", font0)
         plt.xlabel('East, m', font0)
@@ -592,18 +593,22 @@ class GA_SEAD(object):
 
 
 if __name__ == "__main__":
-    targets_sites = [[500, 1500], [2000, 4500], [3000, 1500]]
-    uavs = [[1, 2, 3],  # UAV ID
-            [1, 2, 3],  # UAV type
-            [70, 80, 90],  # Cruise speed
-            [200, 250, 300],  # Minimum turning radii
-            [[700, 1200, -np.pi], [1500, 700, np.pi / 2], [3600, 1000, np.pi / 3]],  # initial states of UAVs
-            [[2500, 4500, np.pi / 2] for _ in range(3)],  # Base positions of UAVs
-            [],  # ignore
-            [],  # ignore
-            [],  # tasks completed
-            []]  # new targets
+    targets = [[3100, 2200], [500, 3700], [2300, 2500], [2000, 3900], [4450, 3600], [4630, 4780], [1400, 4500]]
+    uavs_info = [[1, 2, 3, 4, 5, 6, 7],  # UAV ID
+                 [1, 2, 3, 1, 3, 2],  # UAV type
+                 [70, 80, 90, 60, 100, 80],  # Cruise speed
+                 [200, 250, 300, 180, 300, 260],  # Minimum turning radii
+                 [[1000, 300, -np.pi], [1500, 700, np.pi / 2], [3000, 0, np.pi / 3], [1800, 400, -20 * np.pi / 180],
+                  [2200, 280, 45 * np.pi / 180], [4740, 300, 140 * np.pi / 180]],  # initial states of UAVs
+                 [[0, 0, -np.pi / 2], [0, 0, -np.pi / 2], [1000, 6000, np.pi / 2], [1000, 6000, np.pi / 2],
+                  [4000, 5500, np.pi / 3], [4000, 5500, np.pi / 3]],  # Base positions of UAVs
+                 [],  # ignore
+                 [],  # ignore
+                 [],  # tasks completed
+                 []]  # new targets
 
-    ga = GA_SEAD(targets_sites, 100)
-    solution, fitness_, ga_population, convergence = ga.run_GA(100, uavs)
+    population_size = 300
+    iteration = 300
+    ga = GA_SEAD(targets, population_size)
+    solution, fitness_, ga_population, convergence = ga.run_GA(iteration, uavs_info)
     ga.plot_result(solution, convergence)

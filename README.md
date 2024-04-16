@@ -27,7 +27,7 @@ pip install -r requirements.txt
 
 ![2024-04-16 20-05-44_DPGAgif](https://github.com/jerryfungi/Multi-UAV_Task_Allocation_SEADmission/assets/112320576/703b5336-a33f-4a99-b21f-85c7655eb8d4)
 
- ![DPGA_routes =400x250](https://github.com/jerryfungi/Multi-UAV_Task_Allocation_SEADmission/assets/112320576/44863f2a-146d-4c98-a21f-d8b637876bdf)
+ ![DPGA_routes =100x100](https://github.com/jerryfungi/Multi-UAV_Task_Allocation_SEADmission/assets/112320576/44863f2a-146d-4c98-a21f-d8b637876bdf)
 ![DPGA_routes_time =450x550](https://github.com/jerryfungi/Multi-UAV_Task_Allocation_SEADmission/assets/112320576/7d0152a0-9718-4fa7-8ca9-e4d2798bcec9)
 * Execution
 ```bash

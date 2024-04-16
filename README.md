@@ -24,41 +24,35 @@ pip install -r requirements.txt
 * Execute the python scripts
 
 ## DPGA for dynamic SEAD missions
-
-| Animation | Trajectories |
-| -------- | -------- |
-|  https://github.com/jerryfungi/Multi-UAV_Task_Allocation_SEADmission/assets/112320576/1cd8eb39-fa18-4c64-884c-a97c26652697 | ![DPGA_routes](https://github.com/jerryfungi/Multi-UAV_Task_Allocation_SEADmission/assets/112320576/44863f2a-146d-4c98-a21f-d8b637876bdf)
- |
+ https://github.com/jerryfungi/Multi-UAV_Task_Allocation_SEADmission/assets/112320576/1cd8eb39-fa18-4c64-884c-a97c26652697 
+ ![DPGA_routes](https://github.com/jerryfungi/Multi-UAV_Task_Allocation_SEADmission/assets/112320576/44863f2a-146d-4c98-a21f-d8b637876bdf)
 ![DPGA_routes_time](https://github.com/jerryfungi/Multi-UAV_Task_Allocation_SEADmission/assets/112320576/7d0152a0-9718-4fa7-8ca9-e4d2798bcec9)
-
 * Execution
 ```bash
 python3 decentralized_GA_SEAD.py
 ```
+
 ## GA for static SEAD missions
 ![GA_SEAD_routes](https://github.com/jerryfungi/Multi-UAV_Task_Allocation_SEADmission/assets/112320576/0385ba58-b2ff-4945-befe-bc676a604565)
-
 * Execution
 ```bash
 python3 GA_SEAD_process.py
 ```
+
 ## GA for VRP
-
-
 https://github.com/jerryfungi/Multi-UAV_Task_Allocation_SEADmission/assets/112320576/b33a2b4b-5094-4fa9-b8fb-5a0df2b84912
-
-
 * Execution
 ```bash
 python3 GA_VRP.py
 ```
+
 ## PSO for VRP
 ![PSO_VRP_routes](https://github.com/jerryfungi/Multi-UAV_Task_Allocation_SEADmission/assets/112320576/395883f9-563f-454b-9f44-f318169b5f14)
-
 * Execution
 ```bash
 python3 PSO_VRP.py
 ```
+
 ## Reference
 Considering that the proposed thesis has not been published yet, the related research is presented below for reference.
 * C. Xia, L. Yongtai, Y. Liyuan, and Q. Lijie, "Cooperative task assignment and track planning for multi-UAV attack mobile targets," Journal of Intelligent & Robotic Systems, vol. 100, pp. 1383-1400, 2020.

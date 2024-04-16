@@ -26,7 +26,8 @@ pip install -r requirements.txt
 * Execute the python scripts
 
 ## DPGA for dynamic SEAD missions
-<video src="https://github.com/jerryfungi/Multi-UAV_Task_Allocation_SEADmission/assets/112320576/c3778494-ec80-4bc5-82ff-ece5e33b580d" width=70%>
+<video width="70%" autoplay=True controls>
+	<source src="https://github.com/jerryfungi/Multi-UAV_Task_Allocation_SEADmission/assets/112320576/c3778494-ec80-4bc5-82ff-ece5e33b580d">
 </video>
 
 <img src="https://github.com/jerryfungi/Multi-UAV_Task_Allocation_SEADmission/assets/112320576/425810ae-d80f-469f-b353-63d0f6d3e1c9" width=60%>
@@ -50,7 +51,8 @@ python3 GA_SEAD_process.py
 ```
 
 ## GA for VRP
-<video src="https://github.com/jerryfungi/Multi-UAV_Task_Allocation_SEADmission/assets/112320576/0c97d951-4cc8-4ce7-a1a8-d0c368ed9d39" width=70%>
+<video width="70%" autoplay=True controls>
+	<source src="https://github.com/jerryfungi/Multi-UAV_Task_Allocation_SEADmission/assets/112320576/0c97d951-4cc8-4ce7-a1a8-d0c368ed9d39">
 </video>
 
 * Execution

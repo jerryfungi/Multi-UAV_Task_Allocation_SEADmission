@@ -27,11 +27,7 @@ pip install -r requirements.txt
 
 | Animation | Trajectories |
 | -------- | -------- |
-|  
-
-https://github.com/jerryfungi/Multi-UAV_Task_Allocation_SEADmission/assets/112320576/1cd8eb39-fa18-4c64-884c-a97c26652697
-
-  | ![DPGA_routes](https://github.com/jerryfungi/Multi-UAV_Task_Allocation_SEADmission/assets/112320576/44863f2a-146d-4c98-a21f-d8b637876bdf)
+|  https://github.com/jerryfungi/Multi-UAV_Task_Allocation_SEADmission/assets/112320576/1cd8eb39-fa18-4c64-884c-a97c26652697 | ![DPGA_routes](https://github.com/jerryfungi/Multi-UAV_Task_Allocation_SEADmission/assets/112320576/44863f2a-146d-4c98-a21f-d8b637876bdf)
  |
 ![DPGA_routes_time](https://github.com/jerryfungi/Multi-UAV_Task_Allocation_SEADmission/assets/112320576/7d0152a0-9718-4fa7-8ca9-e4d2798bcec9)
 

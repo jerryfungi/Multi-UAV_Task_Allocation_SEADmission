@@ -27,8 +27,7 @@ pip install -r requirements.txt
 
 | Animation | Trajectories |
 | -------- | -------- |
-|   ![2024-04-16 20-05-44_DPGAgif](https://github.com/jerryfungi/Multi-UAV_Task_Allocation_SEADmission/assets/112320576/a4a3fe11-700d-4cf8-ae4a-ca79e79076df)
-   | ![DPGA_routes](https://hackmd.io/_uploads/B18_T12x0.png) |
+|  | ![DPGA_routes](https://hackmd.io/_uploads/B18_T12x0.png) |
 
 ![DPGA_routes_time](https://hackmd.io/_uploads/HkdOayhxR.png)
 * Execution
@@ -42,8 +41,6 @@ python3 decentralized_GA_SEAD.py
 python3 GA_SEAD_process.py
 ```
 ## GA for VRP
-![2024-04-16 21-38-32_GAVRP](https://github.com/jerryfungi/Multi-UAV_Task_Allocation_SEADmission/assets/112320576/463f0bb7-22c9-4fdb-b6de-4e1bdd9b8478)
-
 * Execution
 ```bash
 python3 GA_VRP.py

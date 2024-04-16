@@ -24,7 +24,8 @@ pip install -r requirements.txt
 * Execute the python scripts
 
 ## DPGA for dynamic SEAD missions
- https://github.com/jerryfungi/Multi-UAV_Task_Allocation_SEADmission/assets/112320576/1cd8eb39-fa18-4c64-884c-a97c26652697 
+![2024-04-16 20-05-44_DPGAgif](https://github.com/jerryfungi/Multi-UAV_Task_Allocation_SEADmission/assets/112320576/f3b3a8d6-f438-436e-af4f-b9e2eb015503)
+
  ![DPGA_routes](https://github.com/jerryfungi/Multi-UAV_Task_Allocation_SEADmission/assets/112320576/44863f2a-146d-4c98-a21f-d8b637876bdf)
 ![DPGA_routes_time](https://github.com/jerryfungi/Multi-UAV_Task_Allocation_SEADmission/assets/112320576/7d0152a0-9718-4fa7-8ca9-e4d2798bcec9)
 * Execution

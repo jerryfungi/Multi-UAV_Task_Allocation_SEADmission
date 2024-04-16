@@ -43,7 +43,7 @@ python3 GA_SEAD_process.py
 ```
 
 ## GA for VRP
-<img src="https://github.com/jerryfungi/Multi-UAV_Task_Allocation_SEADmission/assets/112320576/da068e92-80a3-4ff2-9688-544ebc9c00e3" width=70%>
+<img src="https://github.com/jerryfungi/Multi-UAV_Task_Allocation_SEADmission/assets/112320576/da068e92-80a3-4ff2-9688-544ebc9c00e3" width=65%>
 
 * Execution
 ```bash
@@ -51,7 +51,8 @@ python3 GA_VRP.py
 ```
 
 ## PSO for VRP
-<img src="https://github.com/jerryfungi/Multi-UAV_Task_Allocation_SEADmission/assets/112320576/395883f9-563f-454b-9f44-f318169b5f14" width=75%>
+<img src="https://github.com/jerryfungi/Multi-UAV_Task_Allocation_SEADmission/assets/112320576/395883f9-563f-454b-9f44-f318169b5f14" width=65%>
+
 * Execution
 ```bash
 python3 PSO_VRP.py

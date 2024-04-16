@@ -28,19 +28,17 @@ pip install -r requirements.txt
 <img src="https://github.com/jerryfungi/Multi-UAV_Task_Allocation_SEADmission/assets/112320576/425810ae-d80f-469f-b353-63d0f6d3e1c9" width=60%>
 <img src="https://github.com/jerryfungi/Multi-UAV_Task_Allocation_SEADmission/assets/112320576/82675790-8392-4f3c-964b-fed58bfc5366" width=70%>
 
-
 * Execution
 ```bash
 python3 decentralized_GA_SEAD.py
 ```
-
 ## GA for static SEAD missions
 <img src="https://github.com/jerryfungi/Multi-UAV_Task_Allocation_SEADmission/assets/112320576/0385ba58-b2ff-4945-befe-bc676a604565" width=80%>
+
 * Execution
 ```bash
 python3 GA_SEAD_process.py
 ```
-
 ## GA for VRP
 <img src="https://github.com/jerryfungi/Multi-UAV_Task_Allocation_SEADmission/assets/112320576/da068e92-80a3-4ff2-9688-544ebc9c00e3" width=70%>
 
@@ -48,14 +46,13 @@ python3 GA_SEAD_process.py
 ```bash
 python3 GA_VRP.py
 ```
-
 ## PSO for VRP
 <img src="https://github.com/jerryfungi/Multi-UAV_Task_Allocation_SEADmission/assets/112320576/395883f9-563f-454b-9f44-f318169b5f14" width=75%>
+
 * Execution
 ```bash
 python3 PSO_VRP.py
 ```
-
 ## Reference
 Considering that the proposed thesis has not been published yet, the related research is presented below for reference.
 * C. Xia, L. Yongtai, Y. Liyuan, and Q. Lijie, "Cooperative task assignment and track planning for multi-UAV attack mobile targets," Journal of Intelligent & Robotic Systems, vol. 100, pp. 1383-1400, 2020.
@@ -63,5 +60,4 @@ Considering that the proposed thesis has not been published yet, the related res
 * Z. Jia, J. Yu, X. Ai, X. Xu, and D. Yang, "Cooperative multiple task assignment problem with stochastic velocities and time windows for heterogeneous unmanned aerial vehicles using a genetic algorithm," Aerospace Science and Technology, vol. 76, pp. 112-125, 2018.
 * R. Patel, E. Rudnick-Cohen, S. Azarm, M. Otte, H. Xu, and J. W. Herrmann, "Decentralized task allocation in multi-agent systems using a decentralized genetic algorithm," in 2020 IEEE International Conference on Robotics and Automation (ICRA), 2020: IEEE, pp. 3770-3776. 
 * Z. Qin and Y. Yi, "Particle Swarm Optimization Algorithm with Real Number Encoding for Vehicle Routing Problem," 2011 International Conference of Information Technology, Computer Engineering and Management Sciences, Nanjing, China, 2011, pp. 118-121, doi: 10.1109/ICM.2011.360.
-
 * Z. Qin and Y. Yi, "Particle Swarm Optimization Algorithm with Real Number Encoding for Vehicle Routing Problem," 2011 International Conference of Information Technology, Computer Engineering and Management Sciences, Nanjing, China, 2011, pp. 118-121, doi: 10.1109/ICM.2011.360.

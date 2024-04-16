@@ -35,7 +35,8 @@ python3 decentralized_GA_SEAD.py
 ```
 
 ## GA for static SEAD missions
-<img src="https://github.com/jerryfungi/Multi-UAV_Task_Allocation_SEADmission/assets/112320576/0385ba58-b2ff-4945-befe-bc676a604565" width=80%>
+<img src="https://github.com/jerryfungi/Multi-UAV_Task_Allocation_SEADmission/assets/112320576/0385ba58-b2ff-4945-befe-bc676a604565" width=70%>
+
 * Execution
 ```bash
 python3 GA_SEAD_process.py

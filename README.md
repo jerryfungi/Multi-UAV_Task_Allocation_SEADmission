@@ -42,7 +42,9 @@ python3 GA_SEAD_process.py
 ```
 
 ## GA for VRP
-https://github.com/jerryfungi/Multi-UAV_Task_Allocation_SEADmission/assets/112320576/b33a2b4b-5094-4fa9-b8fb-5a0df2b84912
+
+![2024-04-16 21-38-32_GAVRP](https://github.com/jerryfungi/Multi-UAV_Task_Allocation_SEADmission/assets/112320576/cff09d58-a37d-472e-b23a-3f53c3a80a2b)
+
 * Execution
 ```bash
 python3 GA_VRP.py

@@ -27,7 +27,7 @@ pip install -r requirements.txt
 
 | Animation | Trajectories |
 | -------- | -------- |
-|  | ![DPGA_routes](https://hackmd.io/_uploads/B18_T12x0.png) |
+|      | ![DPGA_routes](https://hackmd.io/_uploads/B18_T12x0.png) |
 
 ![DPGA_routes_time](https://hackmd.io/_uploads/HkdOayhxR.png)
 * Execution
@@ -41,6 +41,7 @@ python3 decentralized_GA_SEAD.py
 python3 GA_SEAD_process.py
 ```
 ## GA for VRP
+
 * Execution
 ```bash
 python3 GA_VRP.py

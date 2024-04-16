@@ -50,7 +50,7 @@ python3 GA_SEAD_process.py
 ```
 
 ## GA for VRP
-<video src="https://github.com/jerryfungi/Multi-UAV_Task_Allocation_SEADmission/assets/112320576/0c97d951-4cc8-4ce7-a1a8-d0c368ed9d39"  autoplay=True width=70%>
+<video src="https://github.com/jerryfungi/Multi-UAV_Task_Allocation_SEADmission/assets/112320576/0c97d951-4cc8-4ce7-a1a8-d0c368ed9d39" autoplay=True width=70%>
 </video>
 
 * Execution

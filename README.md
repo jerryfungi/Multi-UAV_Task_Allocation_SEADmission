@@ -26,17 +26,17 @@ pip install -r requirements.txt
 ## DPGA for dynamic SEAD missions
 
 ![2024-04-16 20-05-44_DPGAgif](https://github.com/jerryfungi/Multi-UAV_Task_Allocation_SEADmission/assets/112320576/703b5336-a33f-4a99-b21f-85c7655eb8d4)
+![DPGA_routes](https://github.com/jerryfungi/Multi-UAV_Task_Allocation_SEADmission/assets/112320576/425810ae-d80f-469f-b353-63d0f6d3e1c9)
+![DPGA_routes_time](https://github.com/jerryfungi/Multi-UAV_Task_Allocation_SEADmission/assets/112320576/82675790-8392-4f3c-964b-fed58bfc5366)
 
-![DPGA_routes](https://hackmd.io/_uploads/B18_T12x0.png =400x250)
 
-![DPGA_routes_time](https://hackmd.io/_uploads/HkdOayhxR.png =450x550)
 * Execution
 ```bash
 python3 decentralized_GA_SEAD.py
 ```
 
 ## GA for static SEAD missions
-![GA_SEAD_routes](https://github.com/jerryfungi/Multi-UAV_Task_Allocation_SEADmission/assets/112320576/0385ba58-b2ff-4945-befe-bc676a604565 =550x400)
+![GA_SEAD_routes](https://github.com/jerryfungi/Multi-UAV_Task_Allocation_SEADmission/assets/112320576/0385ba58-b2ff-4945-befe-bc676a604565)
 * Execution
 ```bash
 python3 GA_SEAD_process.py
@@ -52,7 +52,7 @@ python3 GA_VRP.py
 ```
 
 ## PSO for VRP
-![PSO_VRP_routes](https://github.com/jerryfungi/Multi-UAV_Task_Allocation_SEADmission/assets/112320576/395883f9-563f-454b-9f44-f318169b5f14 =550x270)
+![PSO_VRP_routes](https://github.com/jerryfungi/Multi-UAV_Task_Allocation_SEADmission/assets/112320576/395883f9-563f-454b-9f44-f318169b5f14)
 * Execution
 ```bash
 python3 PSO_VRP.py

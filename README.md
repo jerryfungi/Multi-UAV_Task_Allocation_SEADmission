@@ -26,10 +26,7 @@ pip install -r requirements.txt
 * Execute the python scripts
 
 ## DPGA for dynamic SEAD missions
-<img src="https://github.com/jerryfungi/Multi-UAV_Task_Allocation_SEADmission/assets/112320576/5ee9121f-01a6-4275-a0cb-596edd5188c3" width=50%>
-</img>
-
-<img src="https://github.com/jerryfungi/Multi-UAV_Task_Allocation_SEADmission/assets/112320576/425810ae-d80f-469f-b353-63d0f6d3e1c9" width=60%>
+<img src="https://github.com/jerryfungi/Multi-UAV_Task_Allocation_SEADmission/assets/112320576/5ee9121f-01a6-4275-a0cb-596edd5188c3" width=45%><img src="https://github.com/jerryfungi/Multi-UAV_Task_Allocation_SEADmission/assets/112320576/425810ae-d80f-469f-b353-63d0f6d3e1c9" width=55%>
 </img>
 
 <img src="https://github.com/jerryfungi/Multi-UAV_Task_Allocation_SEADmission/assets/112320576/82675790-8392-4f3c-964b-fed58bfc5366" width=70%>
@@ -41,7 +38,7 @@ python3 decentralized_GA_SEAD.py
 ```
 
 ## GA for static SEAD missions
-<img src="https://github.com/jerryfungi/Multi-UAV_Task_Allocation_SEADmission/assets/112320576/0385ba58-b2ff-4945-befe-bc676a604565" width=80%>
+<img src="https://github.com/jerryfungi/Multi-UAV_Task_Allocation_SEADmission/assets/112320576/0385ba58-b2ff-4945-befe-bc676a604565" width=70%>
 </img>
 
 * Execution

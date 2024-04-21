@@ -316,7 +316,7 @@ class GA_SEAD(object):
         self.depots = information[5]
         self.uavType_for_missions = [[] for _ in range(3)]
         # classify capable UAVs to the missions
-        # [surveillance[1,3],attack[1,2,3],munition[2]], [surveillance[s,att],attack[att,a],verification[s,att]]
+        # [surveillance[1,3],attack[1,2,3],munition[2]], [surveillance[s,a],attack[a,m],verification[s,a]]
         for i, agent in enumerate(self.uav_type):
             if agent == 1:  # surveillance
                 self.uavType_for_missions[0].append(self.uav_id[i])
@@ -594,7 +594,7 @@ class GA_SEAD(object):
 
 if __name__ == "__main__":
     targets = [[3100, 2200], [500, 3700], [2300, 2500], [2000, 3900], [4450, 3600], [4630, 4780], [1400, 4500]]
-    uavs_info = [[1, 2, 3, 4, 5, 6, 7],  # UAV ID
+    uavs_info = [[1, 2, 3, 4, 5, 6],  # UAV ID
                  [1, 2, 3, 1, 3, 2],  # UAV type
                  [70, 80, 90, 60, 100, 80],  # Cruise speed
                  [200, 250, 300, 180, 300, 260],  # Minimum turning radii

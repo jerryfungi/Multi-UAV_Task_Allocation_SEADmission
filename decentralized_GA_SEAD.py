@@ -70,13 +70,12 @@ class DynamicSEADMissionSimulator(object):
         waypoint_radius = 80
         previous_time, previous_broadcast_time, previous_u2g_time = 0, 0, 0
 
-        terminated_tasks, new_targets = [], []
+        terminated_tasks, new_targets, current_uavs = [], [], []
         packets, path, target = [], [], None
         fitness, best_solution = 0, []
         task_confirm = False
-        update = True
+        update = False
         into = False
-        plot_index = 0
         AT, NT = [], []
         back_to_base, return_pub = False, False
         failure = False
@@ -173,9 +172,9 @@ class DynamicSEADMissionSimulator(object):
                         choose the solution with the highest fitness value (when it comes to the same fitness value, 
                                                                         choose the solution with the smallest UAV ID)
                         '''
+                        final_solution = sorted(packets, key=lambda f: f[6], reverse=True)[0][7]
                         path, target, desire_point_index = \
-                            generate_path(sorted(packets, key=lambda f: f[6], reverse=True)[0][7],
-                                          pos, path, target, desire_point_index)
+                            generate_path(final_solution, pos, path, target, desire_point_index)
                     update = True
                 else:
                     update = False
@@ -328,6 +327,7 @@ class DynamicSEADMissionSimulator(object):
         theta = np.arange(0, 2 * np.pi, 0.1)
         fuselage = np.array([150 * np.cos(theta), 40 * np.sin(theta)])
         wing = 40 * np.array([[-0.5, -0.5, 0.5, 0.5, -0.5], [-6, 6, 6, -6, -6]])
+        yaw_list = [[UAVs[_].theta0] for _ in range(uav_num)]
         rotation_translation = lambda angle, pos, bias_x, bias_y: np.array(
             [np.add(pos[0] * np.cos(angle) + pos[1] * np.sin(angle), bias_x),
              np.add(-pos[0] * np.sin(angle) + pos[1] * np.cos(angle), bias_y)])
@@ -340,7 +340,6 @@ class DynamicSEADMissionSimulator(object):
             task_allocation_proccess[a].start()
         start_time = time.time()
         print("Mission start !!")
-        yaw_list = [[UAVs[_].theta0] for _ in range(uav_num)]
 
         ' Receive data from all agents '
         while state != completed:
@@ -393,51 +392,52 @@ class DynamicSEADMissionSimulator(object):
                     for fail in failure_uav_list:
                         plt.plot(fail[0], fail[1], 'kx', markersize=12)
                     plt.pause(1e-5)
-        mission_time = time.time() - start_time
+        mission_time = np.round(time.time() - start_time, 3)
+        print(f"mission complete! "
+              f"mission time:{mission_time} sec")
+        input("Press Enter to display the results")
 
-        print("mission complete")
-        input("....")
-        if not realtime_plot:
-            position_total = max(position, key=len)
-            for tt in range(len(position_total)):
-                plt.cla()
-                plt.axis("equal")
-                plt.plot(origin_plot_list[0], origin_plot_list[1], 'k^',
-                         markerfacecolor='none', markersize=8)
-                plt.plot(targets_plot_list[0], targets_plot_list[1], 'ms',
-                         markerfacecolor='none', markersize=6)
-                plt.plot(base_plot_list[0], base_plot_list[1], 'r*',
-                         markerfacecolor='none', markersize=10)
-                plt.title(f"t = {np.round(position_total[tt][2] - start_time, 3)}", font0)
-                for u in range(uav_num):
-                    if tt < len(x[u]):
-                        plt.plot(x[u][:tt], y[u][:tt], '--', linewidth=1, color=color_style[u])
-                        plt.text(x[u][tt] + 100, y[u][tt] - 120, f'UAV {self.uavs[0][u]}', fontsize='8')
-                        yaw_angle = -yaw_list[u][tt]
-                        uav_fuselage = rotation_translation(yaw_angle, fuselage, x[u][tt], y[u][tt])
-                        uav_wing = rotation_translation(yaw_angle, wing, x[u][tt], y[u][tt])
-                        plt.plot(uav_fuselage[0], uav_fuselage[1], 'k-', linewidth=1)
-                        plt.fill_between(uav_wing[0], uav_wing[1], facecolor="black")
-                    else:
-                        plt.plot(x[u], y[u], '--', linewidth=1, color=color_style[u])
-                        plt.text(x[u][-1] + 100, y[u][-1] - 120, f'UAV {self.uavs[0][u]}', fontsize='8')
-                for t in range(target_num):
-                    plt.text(targets_sites[t][0] + 100, targets_sites[t][1] + 100, f'Target {t + 1}', font1)
-                for m, n in enumerate(new_target_index):
-                    if tt >= n:
-                        plt.plot(found_target[m][0], found_target[m][1], 'bs', label='Target position',
-                                      markerfacecolor='none', markersize=6)
-                        plt.text(found_target[m][0] + 100, found_target[m][1] + 100,
-                                      f'Target {len(targets_sites) + 1 + m}', font3)
-                try:
-                    for m in range(len(failures)):
-                        if failures[m]:
-                            if tt >= failures[m]:
-                                plt.plot(position[m][-1][0], position[m][-1][1], 'x', markersize=12, color="black")
-                except:
-                    pass
-                plt.pause(1e-3)
-        input("----")
+        ' Animation '
+        position_total = max(position, key=len)
+        for tt in range(len(position_total)):
+            plt.cla()
+            plt.axis("equal")
+            plt.plot(origin_plot_list[0], origin_plot_list[1], 'k^',
+                     markerfacecolor='none', markersize=8)
+            plt.plot(targets_plot_list[0], targets_plot_list[1], 'ms',
+                     markerfacecolor='none', markersize=6)
+            plt.plot(base_plot_list[0], base_plot_list[1], 'r*',
+                     markerfacecolor='none', markersize=10)
+            plt.title(f"t = {np.round(position_total[tt][2] - start_time, 3)}", font0)
+            for u in range(uav_num):
+                if tt < len(x[u]):
+                    plt.plot(x[u][:tt], y[u][:tt], '--', linewidth=1, color=color_style[u])
+                    plt.text(x[u][tt] + 100, y[u][tt] - 120, f'UAV {self.uavs[0][u]}', fontsize='8')
+                    yaw_angle = -yaw_list[u][tt]
+                    uav_fuselage = rotation_translation(yaw_angle, fuselage, x[u][tt], y[u][tt])
+                    uav_wing = rotation_translation(yaw_angle, wing, x[u][tt], y[u][tt])
+                    plt.plot(uav_fuselage[0], uav_fuselage[1], 'k-', linewidth=1)
+                    plt.fill_between(uav_wing[0], uav_wing[1], facecolor="black")
+                else:
+                    plt.plot(x[u], y[u], '--', linewidth=1, color=color_style[u])
+                    plt.text(x[u][-1] + 100, y[u][-1] - 120, f'UAV {self.uavs[0][u]}', fontsize='8')
+            for t in range(target_num):
+                plt.text(targets_sites[t][0] + 100, targets_sites[t][1] + 100, f'Target {t + 1}', font1)
+            for m, n in enumerate(new_target_index):
+                if tt >= n:
+                    plt.plot(found_target[m][0], found_target[m][1], 'bs', label='Target position',
+                                  markerfacecolor='none', markersize=6)
+                    plt.text(found_target[m][0] + 100, found_target[m][1] + 100,
+                                  f'Target {len(targets_sites) + 1 + m}', font3)
+            try:
+                for m in range(len(failures)):
+                    if failures[m]:
+                        if tt >= failures[m]:
+                            plt.plot(position[m][-1][0], position[m][-1][1], 'x', markersize=12, color="black")
+            except IndexError:
+                pass
+            plt.pause(1e-4)
+
         ' Final trajectories plot '
         fig, ax = plt.subplots()
         labels = ax.get_xticklabels() + ax.get_yticklabels()
@@ -460,9 +460,10 @@ class DynamicSEADMissionSimulator(object):
             plt.text(found_target[m][0] + 100, found_target[m][1] + 100, f'Target {len(targets_sites) + 1 + m}', font3)
         for t in targets_sites:
             plt.text(t[0] + 100, t[1] + 100, f'Target {targets_sites.index(t) + 1}', font1)
-        plt.text(UAVs[0].depot[0] - 100, UAVs[0].depot[1] - 200, 'Base', font2)
-        plt.plot(self.uavs[5][0][0], self.uavs[5][0][1], 'r*', markerfacecolor='none', markersize=10, label='Base')
-
+        for info in UAVs:
+            plt.text(info.depot[0] - 100, info.depot[1] - 200, 'Base', font2)
+        plt.plot(base_plot_list[0], base_plot_list[1], 'r*',
+                 markerfacecolor='none', markersize=10, label='Base')
         plt.legend(loc='upper right', prop=font)
         plt.title('Trajectories', font0)
         plt.xlabel('East, m', font0)
@@ -479,32 +480,36 @@ class DynamicSEADMissionSimulator(object):
         for j in range(3):
             for k in range(2):
                 for i in range(len(position)):
-                    ax[j][k].plot([p[0] for p in position[i][:part*q]], [p[1] for p in position[i][:part*q]], '--', linewidth=1, color=color_style[i])
+                    ax[j][k].plot([p[0] for p in position[i][:part*q]], [p[1] for p in position[i][:part*q]], '--',
+                                  linewidth=1, color=color_style[i])
                     ax[j][k].text(position[i][0][0], position[i][0][1], f'UAV {self.uavs[0][i]}', fontsize='8')
                     try:
-                        ax[j][k].plot(position[i][part*q-1][0], position[i][part*q-1][1], 'o', markerfacecolor='none', markersize=5, color=color_style[i])
-                    except:
+                        ax[j][k].plot(position[i][part*q-1][0], position[i][part*q-1][1], 'o', markerfacecolor='none',
+                                      markersize=5, color=color_style[i])
+                    except IndexError:
                         pass
-                    ax[j][k].plot(position[i][0][0], position[i][0][1], 'k^',
-                             markerfacecolor='none', markersize=8)
+                    ax[j][k].plot(position[i][0][0], position[i][0][1], 'k^', markerfacecolor='none', markersize=8)
                 for m, n in enumerate(new_target_index):
                     if part * q >= n:
                         ax[j][k].plot(found_target[m][0], found_target[m][1], 'bs', label='Target position',
                                       markerfacecolor='none', markersize=6)
-                        ax[j][k].text(found_target[m][0] + 100, found_target[m][1] + 100, f'Target {len(targets_sites) + 1 + m}', font3)
+                        ax[j][k].text(found_target[m][0] + 100, found_target[m][1] + 100,
+                                      f'Target {len(targets_sites) + 1 + m}', font3)
                 try:
                     for m in range(len(failures)):
                         if failures[m]:
                             if part * q >= failures[m]:
                                 ax[j][k].plot(position[m][-1][0], position[m][-1][1], 'x', markersize=6, color="black")
-                except:
+                except IndexError:
                     pass
-                ax[j][k].plot([b[0] for b in targets_sites], [b[1] for b in targets_sites], 'ms', label='Target position',
-                         markerfacecolor='none', markersize=6)
+                ax[j][k].plot([b[0] for b in targets_sites], [b[1] for b in targets_sites], 'ms',
+                              label='Target position', markerfacecolor='none', markersize=6)
                 for t in targets_sites:
                     ax[j][k].text(t[0] + 100, t[1] + 100, f'Target {targets_sites.index(t) + 1}', font1)
-                ax[j][k].text(UAVs[0].depot[0] + 200, UAVs[0].depot[1] + 100, 'Base', font2)
-                ax[j][k].plot(self.uavs[5][0][0] + 100, self.uavs[5][0][1] + 200, 'r*', markerfacecolor='none', markersize=10, label='Base')
+                for info in UAVs:
+                    ax[j][k].text(info.depot[0] - 100, info.depot[1] - 200, 'Base', font2)
+                ax[j][k].plot(base_plot_list[0], base_plot_list[1], 'r*', markerfacecolor='none', markersize=10,
+                              label='Base')
                 ax[j][k].set_xlabel('East, m', font0)
                 ax[j][k].set_ylabel('North, m', font0)
                 ax[j][k].set_title(f't = {time_[q - 1]}s', font0)
@@ -529,12 +534,12 @@ class DynamicSEADMissionSimulator(object):
 
 
 if __name__ == '__main__':
-    targets_sites = [[3100, 2600], [500, 2400]]
+    targets_sites = [[3100, 2600], [100, 2400]]
     uav_id = [1, 2, 3]
     uav_type = [1, 2, 3]
     cruise_speed = [70, 80, 90]
     turning_radii = [200, 250, 300]
-    initial_states = [[700, 1200, -np.pi], [1500, 700, np.pi / 2], [3600, 1000, np.pi / 3]]
-    base_locations = [[2500, 4500, np.pi / 2] for _ in range(3)]   # same base
+    initial_states = [[1000, 200, -np.pi], [1500, 700, np.pi / 2], [3060, 1000, np.pi / 3]]
+    base_locations = [[2500, 4000, np.pi / 2] for _ in range(3)]   # same base
     dynamic_SEAD_mission = DynamicSEADMissionSimulator(targets_sites, uav_id, uav_type, cruise_speed, turning_radii, initial_states, base_locations)
-    dynamic_SEAD_mission.start_simulation(realtime_plot=False, unknown_targets=[[2800, 3050]], uav_failure=[False, False, 55])
+    dynamic_SEAD_mission.start_simulation(realtime_plot=False, unknown_targets=[[2500, 1800]], uav_failure=[False, False, 55])

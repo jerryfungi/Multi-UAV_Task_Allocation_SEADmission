@@ -14,14 +14,14 @@ class GA_vrp(object):
         self.targets_sites = targets_sites
         self.uavs_sites = uavs_sites
         # GA parameters
-        multiplier = 3
+        multiplier = 1
         self.pop_size = 100*multiplier
         self.pop_cros = 66*multiplier
         self.pop_mut = 32*multiplier
         self.pop_eli = 2*multiplier
         self.prob_cros = 1
         self.prob_mut = 0.7
-        self.iteration = 170
+        self.iteration = 200
         # mapping
         self.uav_num = len(uavs_sites)
         self.target_num = len(targets_sites)
@@ -126,6 +126,9 @@ class GA_vrp(object):
         fitness = self.fitness(population)
         self.training_curve.append(1/fitness[1])
         itr = [0]
+        plt.figure(figsize=(8, 4))
+        mngr = plt.get_current_fig_manager()
+        mngr.window.geometry("+1000+300")
         for i in range(self.iteration):
             itr.append(i+1)
             # cross_num = self.adaptive_setting(itr[-1])
@@ -228,21 +231,18 @@ class GA_vrp(object):
         plt.subplot(121)
         for i in range(len(x)):
             plt.plot(x[i], y[i], marker="^", markersize=5)
-        plt.xlabel("X-Axis")
-        plt.ylabel("Y-Axis")
-        plt.title("route")
+        plt.xlabel("X-Axis", size=10)
+        plt.ylabel("Y-Axis", size=10)
+        plt.title("Trajectories", size=10)
         plt.subplot(122)
         plt.plot(iteration, self.training_curve)
-        plt.title("cost = {:.3f}".format(max(dist)+0.01*sum(dist)))
-        plt.pause(1e-10)
+        plt.title("Cost = {:.3f}".format(max(dist)+0.01*sum(dist)), size=10)
+        plt.pause(1e-5)
 
 
 if __name__ == '__main__':
     targets_sites = [[-65,15],[27,66],[-51,58],[-19,34],[77,25],[50,50],[-23,91],[77,77],[0,39],
                      [71,95],[-25,10],[0,91],[30,30],[15,15],[-100,24],[38,75]]
-    # targets_sites = [[random.randint(-100, 100), random.randint(50, 100)] for _ in range(30)]
-    # uavs_sites = [[0,0],[50,25],[-70,87],[23,10],[21,2]]
-    # uavs_sites = [[0, 0] for _ in range(4)]
     uavs_sites = [[0, 0], [75, 0], [-100, 0]]
     gavrp = GA_vrp(targets_sites, uavs_sites)
     gavrp.GA_main()

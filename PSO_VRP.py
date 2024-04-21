@@ -163,15 +163,18 @@ class PSO_vrp(object):
             x[j].extend([self.uavs_sites[j][0]])
             y[j].extend([self.uavs_sites[j][1]])
         print(f"route: {best_solution[2]}")
+        plt.figure(figsize=(8, 4))
+        mngr = plt.get_current_fig_manager()
+        mngr.window.geometry("+1000+300")
         plt.subplot(121)
         for i in range(len(x)):
             plt.plot(x[i], y[i], marker="o")
-        plt.xlabel("X-Axis")
-        plt.ylabel("Y-Axis")
-        plt.title("route")
+        plt.xlabel("X-Axis", size=10)
+        plt.ylabel("Y-Axis", size=10)
+        plt.title("Trajectories", size=10)
         plt.subplot(122)
         plt.plot(range(self.iteration+1), self.training_curve)
-        plt.title("cost = {:.3f}".format(1/best_solution[0]))
+        plt.title("Cost = {:.3f}".format(1/best_solution[0]), size=10)
         plt.show()
 
 

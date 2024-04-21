@@ -1,4 +1,5 @@
-# Multi-UAV Task Allocation
+# Multi-UAV Task Allocation in SEAD missions
+Task allocation alogrithms for multiple UAVs of SEAD missions and VRP.
 
 ## Introduction
 The repository is developed to tackle the dynamic task allocation problem in the Suppression of Enemy Air Defenses missions (SEAD) for heterogeneous multi-UAV systems. To perform the SEAD mission in dynamic environments, a method for decentralized dynamic task allocation based on a Decentralized Parallel Genetic Algorithm (DPGA) is employed. The method parallelizes a genetic algorithm across the UAV swarm and periodically achieves information exchange through UAV-to-UAV (U2U) communication for conflict resolution and further optimization. Based on the received information and the strategies for dynamic task allocation, each UAV can generate appropriate solutions according to the current environment and be able to confront situations involving ad-hoc addition of targets and UAV failures. Moreover, a path-following method is employed to control them to execute the assigned tasks.The ultimate objective of the repository is to implement real flight operations in outdoor environments. Validation of the developed system is achieved through the repositories located at [Multi-UAV_System_UAVprogram
@@ -8,53 +9,65 @@ The repository is developed to tackle the dynamic task allocation problem in the
 ## OS
 Due to the dubins package, the program is only worked on Linux. <br>
 There are two ways to operate the repository on Windows:
-1. Modify the dubins package and path setting according to the **[link](https://blog.csdn.net/qq_28266955/article/details/80332909)**.
-2. Download Ubuntu on Windows and set up the required environments to run the scripts.
+*  Modify the dubins package and path setting according to the **[link](https://blog.csdn.net/qq_28266955/article/details/80332909)**.
+*  Download Ubuntu on Windows and set up the required environments to run the scripts.
 
-## Dependencies
-Install the necessary dependencies by running.
+## Usage
+* Clone this repo
+```bash
+git clone https://github.com/jerryfungi/Multi-UAV_Task_Allocation_SEADmission.git
+```
+
+* Install the necessary dependencies by running.
 ```bash
 pip install -r requirements.txt
 ```
 
-## Usage
-### DPGA for dynamic SEAD missions
-```python
-from decentralized_GA_SEAD import *
+* Execute the python scripts
 
-targets_sites = [[3100, 2600], [500, 2400]]
-uav_id = [1, 2, 3]
-uav_type = [1, 2, 3]
-cruise_speed = [70, 80, 90]
-turning_radii = [200, 250, 300]
-initial_states = [[700, 1200, -np.pi], [1500, 700, np.pi / 2], [3600, 1000, np.pi / 3]]
-base_locations = [[2500, 4500, np.pi / 2] for _ in range(3)]
-dynamic_SEAD_mission = DynamicSEADMissionSimulator(targets_sites, uav_id, uav_type, cruise_speed, turning_radii, initial_states, base_locations)
-dynamic_SEAD_mission.start_simulation(realtime_plot=True, unknown_targets=[[600, 2850]], uav_failure=[False, False, 55])
+## DPGA for dynamic SEAD missions
+<img src="https://github.com/jerryfungi/Multi-UAV_Task_Allocation_SEADmission/assets/112320576/5ee9121f-01a6-4275-a0cb-596edd5188c3" width=45%><img src="https://github.com/jerryfungi/Multi-UAV_Task_Allocation_SEADmission/assets/112320576/425810ae-d80f-469f-b353-63d0f6d3e1c9" width=55%>
+</img>
+
+<img src="https://github.com/jerryfungi/Multi-UAV_Task_Allocation_SEADmission/assets/112320576/82675790-8392-4f3c-964b-fed58bfc5366" width=70%>
+</img>
+
+* Execution
+```bash
+python3 decentralized_GA_SEAD.py
 ```
-#### Result
 
-### GA for static SEAD missions
-```python
-from GA_SEAD_process import *
+## GA for static SEAD missions
+<img src="https://github.com/jerryfungi/Multi-UAV_Task_Allocation_SEADmission/assets/112320576/0385ba58-b2ff-4945-befe-bc676a604565" width=70%>
+</img>
 
-targets_sites = [[500, 1500], [2000, 4500], [3000, 1500]]
-uavs = [[1, 2, 3],  # UAV ID
-        [1, 2, 3],  # UAV type
-        [70, 80, 90],  # Cruise speed
-        [200, 250, 300],  # Minimum turning radii
-        [[700, 1200, -np.pi], [1500, 700, np.pi / 2], [3600, 1000, np.pi / 3]],  # initial states of UAVs
-        [[2500, 4500, np.pi / 2] for _ in range(3)],  # Base positions of UAVs
-        [],  # ignore
-        [],  # ignore
-        [],  # tasks completed
-        []]  # new targets
-
-population_size = 100
-iteration = 100
-mission = GA_SEAD(targets_sites, population_size)
-solution, fitness, ga_population, convergence = mission.run_GA(iteration, uavs)
-mission.plot_result(solution, convergence)
+* Execution
+```bash
+python3 GA_SEAD_process.py
 ```
-#### Result
 
+## GA for VRP
+<img src="https://github.com/jerryfungi/Multi-UAV_Task_Allocation_SEADmission/assets/112320576/3a795218-8e97-4c51-a4ed-d4a479f44156" width=70%>
+</img>
+
+* Execution
+```bash
+python3 GA_VRP.py
+```
+
+## PSO for VRP
+<img src="https://github.com/jerryfungi/Multi-UAV_Task_Allocation_SEADmission/assets/112320576/395883f9-563f-454b-9f44-f318169b5f14" width=75%>
+</img>
+
+* Execution
+```bash
+python3 PSO_VRP.py
+```
+
+## Reference
+Considering that the proposed thesis has not been published yet, the related research is presented below for reference.
+* C. Xia, L. Yongtai, Y. Liyuan, and Q. Lijie, "Cooperative task assignment and track planning for multi-UAV attack mobile targets," Journal of Intelligent & Robotic Systems, vol. 100, pp. 1383-1400, 2020.
+* G. Xu, T. Long, Z. Wang, and L. Liu, "Target-bundled genetic algorithm for multi-unmanned aerial vehicle cooperative task assignment considering precedence constraints," Proceedings of the Institution of Mechanical Engineers, Part G: Journal of Aerospace Engineering, vol. 234, no. 3, pp. 760-773, 2020.
+* Z. Jia, J. Yu, X. Ai, X. Xu, and D. Yang, "Cooperative multiple task assignment problem with stochastic velocities and time windows for heterogeneous unmanned aerial vehicles using a genetic algorithm," Aerospace Science and Technology, vol. 76, pp. 112-125, 2018.
+* R. Patel, E. Rudnick-Cohen, S. Azarm, M. Otte, H. Xu, and J. W. Herrmann, "Decentralized task allocation in multi-agent systems using a decentralized genetic algorithm," in 2020 IEEE International Conference on Robotics and Automation (ICRA), 2020: IEEE, pp. 3770-3776. 
+* Z. Qin and Y. Yi, "Particle Swarm Optimization Algorithm with Real Number Encoding for Vehicle Routing Problem," 2011 International Conference of Information Technology, Computer Engineering and Management Sciences, Nanjing, China, 2011, pp. 118-121, doi: 10.1109/ICM.2011.360.

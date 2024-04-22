@@ -542,4 +542,4 @@ if __name__ == '__main__':
     initial_states = [[1000, 200, -np.pi], [1500, 700, np.pi / 2], [3060, 1000, np.pi / 3]]
     base_locations = [[2500, 4000, np.pi / 2] for _ in range(3)]   # same base
     dynamic_SEAD_mission = DynamicSEADMissionSimulator(targets_sites, uav_id, uav_type, cruise_speed, turning_radii, initial_states, base_locations)
-    dynamic_SEAD_mission.start_simulation(realtime_plot=False, unknown_targets=[[2500, 1800]], uav_failure=[False, False, 55])
+    dynamic_SEAD_mission.start_simulation(realtime_plot=True, unknown_targets=[[2500, 1800]], uav_failure=[False, False, 55])

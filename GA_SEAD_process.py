@@ -10,14 +10,14 @@ import dubins
 class GA_SEAD(object):
     def __init__(self, targets, population_size=300, crossover_num=None, mutation_num=None, elitism_num=None, heading_discretization=10):
         self.targets = targets
-        # global message
+        ' Global message '
         self.uav_id = []
         self.uav_type = []
         self.uav_velocity = []
         self.uav_Rmin = []
         self.uav_position = []
         self.depots = []
-        # GA parameters
+        ' GA parameters '
         self.total_population_size = population_size
         self.population_size = population_size
         self.elitism_num = elitism_num if elitism_num else 2
@@ -27,7 +27,7 @@ class GA_SEAD(object):
         self.crossover_prob = [0.5, 0.5]
         self.lambda_1 = 0
         self.lambda_2 = 10
-        # the precomputed matrix for optimization
+        ' The precomputed matrix for optimization '
         self.uavType_for_missions = []
         self.tasks_status = [3 for _ in range(len(self.targets))]
         self.cost_matrix = []
@@ -307,7 +307,7 @@ class GA_SEAD(object):
         if not set(self.uav_id) == set(information[0]):  # check agents
             build_graph = True
             lost_agent = True
-        # clear the information
+        ' Clear the information '
         self.uav_id = information[0]
         self.uav_type = information[1]
         self.uav_velocity = information[2]
@@ -315,8 +315,8 @@ class GA_SEAD(object):
         self.uav_position = information[4]
         self.depots = information[5]
         self.uavType_for_missions = [[] for _ in range(3)]
-        # classify capable UAVs to the missions
-        # [surveillance[1,3],attack[1,2,3],munition[2]], [surveillance[s,a],attack[a,m],verification[s,a]]
+        ' Classify capable UAVs to the missions '
+        ' [surveillance[1,3],attack[1,2,3],munition[2]], [surveillance[s,a],attack[a,m],verification[s,a]] '
         for i, agent in enumerate(self.uav_type):
             if agent == 1:  # surveillance
                 self.uavType_for_missions[0].append(self.uav_id[i])
@@ -327,7 +327,7 @@ class GA_SEAD(object):
                 self.uavType_for_missions[2].append(self.uav_id[i])
             elif agent == 3:  # munition
                 self.uavType_for_missions[1].append(self.uav_id[i])
-        # cost graph --------------------------------------------------------------------------------------------
+        ' COST TABLE -------------------------------------------------------------------------------------------- '
         if build_graph:
             self.cost_matrix = [[[[[0 for a in range(len(self.discrete_heading))] for b in range(len(self.targets) + 1)]
                                   for c in range(len(self.discrete_heading))] for d in range(len(self.targets) + 1)]
@@ -343,7 +343,7 @@ class GA_SEAD(object):
                             for u in range(len(self.uav_id)):
                                 distance = dubins.shortest_path(source_point, end_point, self.uav_Rmin[u]).path_length()
                                 self.cost_matrix[u][a][b][c][d] = distance
-        # update real time information in graph
+        ' update real time information in graph '
         for a in range(1, len(self.targets) + 1):
             for b in self.discrete_heading:
                 point = self.targets[a - 1] + [b * self.heading_discretization * np.pi / 180]
@@ -356,13 +356,13 @@ class GA_SEAD(object):
             distance = dubins.shortest_path(self.uav_position[u], self.depots[u], self.uav_Rmin[u]).path_length()
             self.cost_matrix[u][0][0][0][0] = distance
 
-        # ga parameters
+        ' GA parameters '
         self.population_size = round(self.total_population_size / len(self.uav_id)) if distributed else self.total_population_size
         self.crossover_num = round((self.population_size - self.elitism_num) * 0.67)
         self.mutation_num = self.population_size - self.crossover_num - self.elitism_num
         self.lambda_1 = 1 / (sum(self.uav_velocity))
 
-        # precomputed matrix
+        ' Predefined matrix '
         self.remaining_targets = [target_id for target_id in range(1, len(self.targets) + 1) if
                                   not self.tasks_status[target_id - 1] == 0]
         self.task_amount_array = [np.count_nonzero(np.array(self.tasks_status) >= 3 - t) for t in range(3)]
@@ -373,7 +373,7 @@ class GA_SEAD(object):
         for k, times in enumerate(self.tasks_status):
             self.target_index_array.append(self.target_index_array[k] + times)
 
-        # revise population
+        ' Modify population '
         if population:
             for elite in information[7]:
                 for task in clear_task:

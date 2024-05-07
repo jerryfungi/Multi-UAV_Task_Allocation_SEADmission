@@ -99,16 +99,16 @@ class GA_SEAD(object):
             for sequence in task_sequence_time:
                 time_list.extend(sequence)
             time_list.sort()
-            # time sequence penalty
+            ' time sequence penalty '
             penalty, j = 0, 0
             for task_num in self.tasks_status:
                 if task_num >= 2:
                     for k in range(1, task_num):
                         penalty += max(0, time_list[j+k-1][2] - time_list[j+k][2])
                 j += task_num
-            fitness_value.extend([1 / (np.max(np.divide(cost, self.uav_velocity))
+            fitness_value.append(1 / (np.max(np.divide(cost, self.uav_velocity))
                                        + self.lambda_1 * np.sum(cost)
-                                       + self.lambda_2 * penalty)])
+                                       + self.lambda_2 * penalty))
         roulette_wheel = np.array(fitness_value) / np.sum(fitness_value)
         return fitness_value, roulette_wheel
 
@@ -182,6 +182,15 @@ class GA_SEAD(object):
         order_based_gene = np.array(sorted(chromosome, key=lambda u: u[0]))
         return [[g[i] for g in order_based_gene] for i in range(5)]
 
+    @staticmethod
+    def copy_chromosome(chromosome):
+        chromosome_len, gene_len = len(chromosome), len(chromosome[0])
+        duplicate_chromosome = [[0 for _ in range(gene_len)] for _ in range(chromosome_len)]
+        for i in range(chromosome_len):
+            for j in range(gene_len):
+                duplicate_chromosome[i][j] = chromosome[i][j]
+        return duplicate_chromosome
+
     def crossover_operator(self, wheel, population):
         def two_point_crossover(parent_1, parent_2):
             target_based_gene = []
@@ -224,22 +233,18 @@ class GA_SEAD(object):
 
     def mutation_operator(self, wheel, population):
         def point_agent_mutation(chromosome):
-            # choose a point to mutate
+            """ choose a point to mutate """
             mut_point = np.random.randint(0, len(chromosome[0]))
-            # mutate assign uav or heading angle
-            new_gene = []
-            for i in range(len(chromosome)):  # copy chromosome
-                new_gene.append(chromosome[i][:])
-            # mutate assign uav
+            " mutate assign uav or heading angle "
+            new_gene = self.copy_chromosome(chromosome)
+            " mutate assign UAV "
             new_gene[3][mut_point] = random.choice([i for i in self.uavType_for_missions[new_gene[2][mut_point] - 1]])
             return new_gene
 
         def point_heading_mutation(chromosome):
             """ choose a point to mutate """
             mut_point = np.random.randint(0, len(chromosome[0]))
-            new_gene = []
-            for i in range(len(chromosome)):  # copy chromosome
-                new_gene.append(chromosome[i][:])
+            new_gene = self.copy_chromosome(chromosome)
             ' mutate assign heading '
             new_gene[4][mut_point] = random.choice([i for i in self.discrete_heading if i != chromosome[4][mut_point]])
             return new_gene
@@ -262,21 +267,19 @@ class GA_SEAD(object):
             return self.target_bundle2order(mutate_target_based)
 
         def task_bundle_mutation(chromosome):
-            # turn to target-based
+            """ turn to target-based """
             task_based_gene = self.order2task_bundle(chromosome)
-            # choose a task to mutate
+            " choose a task to mutate "
             mut_task = np.random.randint(0, 3)
-            # shuffle the state
+            " shuffle the state "
             task_sequence = list(range(self.task_amount_array[mut_task]))
             random.shuffle(task_sequence)
-            # task mutate
-            mutate_task_based = []
-            for i in range(len(task_based_gene)):  # copy chromosome
-                mutate_task_based.append(task_based_gene[i][:])
+            " task mutate "
+            mutate_task_based = self.copy_chromosome(task_based_gene)
             for i, sequence in enumerate(task_sequence):
                 mutate_task_based[self.task_index_array[mut_task] + i][3:] = \
                     task_based_gene[self.task_index_array[mut_task] + sequence][3:]
-            # back to order-based
+            " back to order-based "
             order_based_gene = np.array(sorted(mutate_task_based, key=lambda u: u[0]))
             return [[g[i] for g in order_based_gene] for i in range(5)]
 
@@ -507,12 +510,12 @@ class GA_SEAD(object):
                 arrow_.extend(
                     [[route_[0][arr], route_[1][arr], route_[0][arr + 100], route_[1][arr + 100]]
                      for arr in range(0, len(route_[0]), 15000)])
-            except:
+            except IndexError:
                 pass
-            print(state_list)
             return distance, route_, arrow_
 
-        print(f'best gene:{best_solution}')
+        print(f'Chromosome: \n{np.array(best_solution)}')
+        print("==============================================================================")
         uav_num = len(self.uav_id)
         dist = np.zeros(uav_num)
         task_sequence_state = [[] for _ in range(uav_num)]
@@ -530,26 +533,34 @@ class GA_SEAD(object):
         for j in range(uav_num):
             task_sequence_state[j] = [self.uav_position[j]] + task_sequence_state[j] + [self.depots[j]]
             dist[j], route_state[j], arrow_state[j] = dubins_plot(task_sequence_state[j], j, task_route[j])
-        for route in task_route:
-            print(f'best route:{route}')
+
+        task_type = ["classify", "attack", "verify"]
+        print("Tasks assigned: ")
+        for j in range(len(task_route)):
+            print(f'UAV{self.uav_id[j]}: ')
+            for k in range(len(task_route[j])):
+                print(f'Target{task_route[j][k][0]} {task_type[task_route[j][k][1] - 1]} task')
+
         # arrange to target-based to check time sequence constraints
         time_list = []
         for time_sequence in task_route:
             time_list.extend(time_sequence)
         time_list.sort()
-        print(time_list)
         penalty, j = 0, 0
         for task_num in self.tasks_status:
             if task_num >= 2:
                 for k in range(1, task_num):
                     penalty += max(0, time_list[j + k - 1][2] - time_list[j + k][2])
             j += task_num
-        print(f'mission time: {max(np.divide(dist, self.uav_velocity))} (sec)')
-        print(f'total distance: {sum(dist)} (m)')
-        print(max(np.divide(dist, self.uav_velocity))+self.lambda_1*sum(dist)+self.lambda_2*penalty)
-        print(f'penalty: {penalty}')
-        print(1/self.fitness_evaluate_calculate([best_solution])[0][0])
-        print(1 / self.fitness_evaluate([best_solution])[0][0])
+
+        print("==============================================================================")
+        print("Results: ")
+        print(f'Mission time: {np.round(max(np.divide(dist, self.uav_velocity)), 3)} (sec)')
+        print(f'Total distance: {np.round(sum(dist), 3)} (m)')
+        print(f'Cost value: {np.round((max(np.divide(dist, self.uav_velocity)) + self.lambda_1*sum(dist)+self.lambda_2*penalty), 5)}')
+        print(f'Penalty for task sequence constraints: {penalty}')
+        print("==============================================================================")
+
         color_style = ['tab:blue', 'tab:green', 'tab:orange', '#DC143C', '#808080', '#030764', '#06C2AC', '#008080',
                        '#DAA520', '#580F41', '#7BC8F6', '#C875C4']
         font = {'family': 'Times New Roman', 'weight': 'normal', 'size': 8}
@@ -559,12 +570,11 @@ class GA_SEAD(object):
         if curve:
             plt.subplot(122)
             plt.plot([b for b in range(1, len(curve) + 1)], curve, '-')
-            print(len(curve))
             plt.grid()
             plt.title("Convergence", font0)
             plt.xlabel("Iteration", font0)
             plt.ylabel("Cost", font0)
-            # plt.ylabel('E ( $\mathregular{J_i}$ / $\mathregular{J_1}$ )', fontsize=12)
+            plt.ylabel('E ( $\mathregular{J_i}$ / $\mathregular{J_1}$ )', fontsize=12)
             plt.subplot(121)
         else:
             fig, ax = plt.subplots()
@@ -588,7 +598,6 @@ class GA_SEAD(object):
         plt.title("Routes", font0)
         plt.xlabel('East, m', font0)
         plt.ylabel('North, m', font0)
-        # plt.grid()
         plt.show()
 
 
@@ -608,7 +617,7 @@ if __name__ == "__main__":
                  []]  # new targets
 
     population_size = 300
-    iteration = 300
+    iteration = 100
     ga = GA_SEAD(targets, population_size)
     solution, fitness_, ga_population, convergence = ga.run_GA(iteration, uavs_info)
     ga.plot_result(solution, convergence)

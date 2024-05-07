@@ -193,30 +193,29 @@ class GA_SEAD(object):
 
     def crossover_operator(self, wheel, population):
         def two_point_crossover(parent_1, parent_2):
-            target_based_gene = []
             # turn to target-based
-            for parent in [parent_1, parent_2]:
-                target_based_gene.append(self.order2target_bundle(parent))
+            target_based_gene = [self.order2target_bundle(parent_1), self.order2target_bundle(parent_2)]
             # choose cut point
             cut_point_1, cut_point_2 = sorted(random.sample(range(len(parent_1[0])), 2))
             cut_len = cut_point_2 - cut_point_1
             target_based_gene[0][cut_point_1:cut_point_2], target_based_gene[1][cut_point_1:cut_point_2] = \
-                [target_based_gene[0][cut_point_1 + i][:3] + target_based_gene[1][cut_point_1 + i][3:] for i in range(cut_len)], \
-                [target_based_gene[1][cut_point_1 + i][:3] + target_based_gene[0][cut_point_1 + i][3:] for i in range(cut_len)]
+                [target_based_gene[0][cut_point_1 + i][:3] + target_based_gene[1][cut_point_1 + i][3:] for i in
+                 range(cut_len)], \
+                [target_based_gene[1][cut_point_1 + i][:3] + target_based_gene[0][cut_point_1 + i][3:] for i in
+                 range(cut_len)]
             # back to order-based
             child_1 = self.target_bundle2order(target_based_gene[0])
             child_2 = self.target_bundle2order(target_based_gene[1])
             return [child_1, child_2]
 
         def target_bundle_crossover(parent_1, parent_2):
-            target_based_gene = []
             # turn to target-based
-            for parent in [parent_1, parent_2]:
-                target_based_gene.append(self.order2target_bundle(parent))
+            target_based_gene = [self.order2target_bundle(parent_1), self.order2target_bundle(parent_2)]
             # select targets to exchange
             targets_exchanged = random.sample(self.remaining_targets, random.randint(1, len(self.remaining_targets)))
-            for i in range(len(target_based_gene[0])):
-                if target_based_gene[0][i][1] in targets_exchanged:
+            for target in targets_exchanged:
+                start_index = sum(self.tasks_status[:target - 1])
+                for i in range(start_index, start_index + self.tasks_status[target - 1]):
                     target_based_gene[0][i], target_based_gene[1][i] = \
                         target_based_gene[0][i][:3] + target_based_gene[1][i][3:], \
                         target_based_gene[1][i][:3] + target_based_gene[0][i][3:]
@@ -224,6 +223,7 @@ class GA_SEAD(object):
             child_1 = self.target_bundle2order(target_based_gene[0])
             child_2 = self.target_bundle2order(target_based_gene[1])
             return [child_1, child_2]
+
         children = []
         for k in range(0, self.crossover_num, 2):
             p_1, p_2 = self.selection(wheel, 2)
@@ -250,7 +250,7 @@ class GA_SEAD(object):
             return new_gene
 
         def target_bundle_mutation(chromosome):
-            # turn to target-based
+            """ turn to target-based """
             target_based_gene = self.order2target_bundle(chromosome)
             for task_type in self.target_sequence:
                 random.shuffle(task_type)
@@ -263,7 +263,7 @@ class GA_SEAD(object):
                      [a[1:] for a in target_based_gene[self.target_index_array[sequence]:self.target_index_array[sequence + 1]]]
                      [i] for i in range(self.tasks_status[sequence])]
                 j += self.tasks_status[sequence]
-            # back to order-based
+            ' back to order-based '
             return self.target_bundle2order(mutate_target_based)
 
         def task_bundle_mutation(chromosome):
@@ -330,7 +330,7 @@ class GA_SEAD(object):
                 self.uavType_for_missions[2].append(self.uav_id[i])
             elif agent == 3:  # munition
                 self.uavType_for_missions[1].append(self.uav_id[i])
-        ' COST TABLE -------------------------------------------------------------------------------------------- '
+        ' COST TABLE (graph) ------------------------------------------------------------------------------------- '
         if build_graph:
             self.cost_matrix = [[[[[0 for a in range(len(self.discrete_heading))] for b in range(len(self.targets) + 1)]
                                   for c in range(len(self.discrete_heading))] for d in range(len(self.targets) + 1)]
@@ -413,15 +413,11 @@ class GA_SEAD(object):
         return population
 
     def run_GA(self, iteration, uav_message, population=None, distributed=False):
-        a = []
+        fitness_convergence = []
         population = self.information_setting(uav_message, population, distributed)
         residual_tasks = sum(self.tasks_status)
-        if residual_tasks == 0:
-            empty = True
-        else:
+        if residual_tasks != 0:
             self.crossover_prob = [0, 1] if residual_tasks <= 1 else [0.5, 0.5]
-            empty = False
-        if not empty:
             if not population:
                 try:
                     population = self.generate_population()
@@ -429,16 +425,15 @@ class GA_SEAD(object):
                     return [[] for _ in range(5)], 1e5, [], 0
                 iteration -= 1
             fitness, wheel = self.fitness_evaluate(population)
-            a.append(1/max(fitness))
+            fitness_convergence.append(1/max(fitness))
             for iterate in range(iteration):
                 new_population = []
                 new_population.extend(self.elitism_operator(fitness, population))
                 new_population.extend(self.crossover_operator(wheel, population))
                 new_population.extend(self.mutation_operator(wheel, population))
                 fitness, wheel = self.fitness_evaluate(new_population)
-                population = new_population
-                a.append(1/max(fitness))
-            return population[fitness.index(max(fitness))], max(fitness), population, a
+                fitness_convergence.append(1/max(fitness))
+            return population[fitness.index(max(fitness))], max(fitness), population, fitness_convergence
         else:
             return [[] for _ in range(5)], 0, [], 0
 
@@ -448,12 +443,8 @@ class GA_SEAD(object):
         if update:
             population = self.information_setting(uav_message, population, distributed)
         residual_tasks = sum(self.tasks_status)
-        if residual_tasks == 0:
-            empty = True
-        else:
+        if residual_tasks != 0:
             self.crossover_prob = [0, 1] if residual_tasks <= 1 else [0.5, 0.5]
-            empty = False
-        if not empty:
             if not population:
                 population = self.generate_population()
             fitness, wheel = self.fitness_evaluate(population)
@@ -535,9 +526,10 @@ class GA_SEAD(object):
             dist[j], route_state[j], arrow_state[j] = dubins_plot(task_sequence_state[j], j, task_route[j])
 
         task_type = ["classify", "attack", "verify"]
+        uav_type = ["Surveillance UAV", "Attack UAV", "Munition UAV"]
         print("Tasks assigned: ")
         for j in range(len(task_route)):
-            print(f'UAV{self.uav_id[j]}: ')
+            print(f'\nUAV{self.uav_id[j]} ({uav_type[self.uav_type[j] - 1]}): ')
             for k in range(len(task_route[j])):
                 print(f'Target{task_route[j][k][0]} {task_type[task_route[j][k][1] - 1]} task')
 
@@ -557,8 +549,8 @@ class GA_SEAD(object):
         print("Results: ")
         print(f'Mission time: {np.round(max(np.divide(dist, self.uav_velocity)), 3)} (sec)')
         print(f'Total distance: {np.round(sum(dist), 3)} (m)')
-        print(f'Cost value: {np.round((max(np.divide(dist, self.uav_velocity)) + self.lambda_1*sum(dist)+self.lambda_2*penalty), 5)}')
-        print(f'Penalty for task sequence constraints: {penalty}')
+        print(f'Cost value: {np.round((max(np.divide(dist, self.uav_velocity)) + self.lambda_1 * sum(dist) + self.lambda_2 * penalty), 3)}')
+        print(f'Penalty for task sequence constraints: {np.round(penalty, 3)}')
         print("==============================================================================")
 
         color_style = ['tab:blue', 'tab:green', 'tab:orange', '#DC143C', '#808080', '#030764', '#06C2AC', '#008080',

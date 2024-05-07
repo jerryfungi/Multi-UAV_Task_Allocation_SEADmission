@@ -691,7 +691,7 @@ def path_following_pid(car, path, kp, kd):
     plt.show()
     return list_for_u, list_for_t, actual_x, actual_y
 
-        
+
 if __name__ == "__main__":
     uav = UAV(1, 1, 3, 10, [-6.878, 15.867, -200*pi/180], [0, 0, -np.pi / 2])
     point = [[-6.878, 15.867, -200 * pi / 180], [-42.277, -9.575, 135 * pi / 180], [-47.314, 21.584, 25 * pi / 180]]

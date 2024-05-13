@@ -1,14 +1,11 @@
-import random
 import time
-import math
 import numpy as np
-import threading
-import queue
+from math import cos, sin, hypot
 from matplotlib import pyplot as plt
 import multiprocessing as mp
 import dubins
-from dubins_model import *
-from GA_SEAD_process import *
+from dubins_model import angle_between, step_pid
+from GA_SEAD_process import GA_SEAD, InformationOfUAVs
 
 
 class UAV(object):
@@ -35,10 +32,10 @@ class DynamicSEADMissionSimulator(object):
         uavs = control2ga_queue.get()
         while True:
             'optimization operation'
-            solution, fitness_value, population = mission.run_GA_time_period_version(output_interval, uavs, population,
-                                                                                     update, distributed=True)
+            solution, population = mission.run_GA_time_period_version(output_interval, uavs, population,
+                                                                      update, distributed=True)
             'transmit the best solution to the main process'
-            ga2control_queue.put([fitness_value, solution])
+            ga2control_queue.put([solution.fitness_value, solution.chromosome])
             if not control2ga_queue.empty():
                 'get the information of other UAVs from the main process'
                 uavs = control2ga_queue.get()
@@ -97,7 +94,11 @@ class DynamicSEADMissionSimulator(object):
                         repack_packets[8 + i].extend(uav_msg[8 + i])
                 task_accomplished.extend(uav_msg[8])
                 new_target.extend(uav_msg[9])
-            return repack_packets, fixx, task_accomplished, new_target
+
+            uav_info_struct = InformationOfUAVs(repack_packets[0], repack_packets[1], repack_packets[4],
+                                                repack_packets[2], repack_packets[3], repack_packets[5],
+                                                uav_best_solution=repack_packets[7])
+            return uav_info_struct, fixx, task_accomplished, new_target
 
         def generate_path(chromosome, position, path, targ, index):
             if chromosome and not back_to_base:
@@ -152,9 +153,9 @@ class DynamicSEADMissionSimulator(object):
                 to_ga_message, fix_target, at, nt = repack_packets2ga_thread(packets)
                 AT.extend(at)
                 NT.extend(nt)
-                to_ga_message[8], to_ga_message[9] = AT, NT
+                to_ga_message.tasks_completed, to_ga_message.new_targets = AT, NT
                 'check the unknown targets'
-                for target_found in to_ga_message[9]:
+                for target_found in to_ga_message.new_targets:
                     if target_found not in targets_sites:
                         targets_sites.append(target_found)
                 'task-locking mechanism'
@@ -162,10 +163,10 @@ class DynamicSEADMissionSimulator(object):
                     control2ga_queue.put(to_ga_message)
                     AT, NT = [], []
                     for task in terminated_tasks:
-                        if task in to_ga_message[8]:
+                        if task in to_ga_message.tasks_completed:
                             terminated_tasks.pop(terminated_tasks.index(task))
                     for task in new_targets:
-                        if task in to_ga_message[9]:
+                        if task in to_ga_message.new_targets:
                             new_targets.pop(new_targets.index(task))
                     if update:
                         '''
@@ -184,16 +185,16 @@ class DynamicSEADMissionSimulator(object):
             ' <<<<<<<<<<<<<<< Control Phase >>>>>>>>>>>>>>> '
             if path and time.time() - previous_time >= .1:
                 'back to the base or not'
-                if math.hypot(uav.depot[0] - x_n, uav.depot[1] - y_n) <= waypoint_radius and back_to_base and not return_pub:
+                if hypot(uav.depot[0] - x_n, uav.depot[1] - y_n) <= waypoint_radius and back_to_base and not return_pub:
                     print(f'UAV {uav.id} => mission completed: {np.round(time.time() - start_time, 3)} sec')
                     return_pub = True
                     control2ga_queue.put([44])
 
                 'identify the target is reached or not'
-                if math.hypot(target[0][0] - x_n, target[0][1] - y_n) <= waypoint_radius and not into:
+                if hypot(target[0][0] - x_n, target[0][1] - y_n) <= waypoint_radius and not into:
                     into = True
                 'the condition of the task completed'
-                if math.hypot(target[0][0] - x_n, target[0][1] - y_n) >= waypoint_radius and into:
+                if hypot(target[0][0] - x_n, target[0][1] - y_n) >= waypoint_radius and into:
                     if target[0][3:]:
                         terminated_tasks.append(target[0][3:])
                         print(f"UAV {uav.id} => Target {target[0][3]} {task_type[target[0][4] - 1]} finished: {np.round(time.time() - start_time, 3)} sec")
@@ -202,7 +203,7 @@ class DynamicSEADMissionSimulator(object):
                         into = False
 
                 'activate the task-locking mechanism or not'
-                if math.hypot(target[0][0] - x_n, target[0][1] - y_n) <= 2 * uav.Rmin:
+                if hypot(target[0][0] - x_n, target[0][1] - y_n) <= 2 * uav.Rmin:
                     if target[0][3:]:
                         task_confirm = True
                     else:
@@ -384,18 +385,26 @@ class DynamicSEADMissionSimulator(object):
                             plt.fill_between(uav_wing[0], uav_wing[1], facecolor="black")
                     for t in range(target_num):
                         plt.text(targets_sites[t][0] + 100, targets_sites[t][1] + 100, f'Target {t + 1}', font1)
-                    i = 1
-                    for t in found_target:
+                    for i, t in enumerate(found_target):
                         plt.plot(t[0], t[1], 'bs', markerfacecolor='none', markersize=6)
-                        plt.text(t[0] + 100, t[1] + 100, f'Target {target_num + i}', font3)
-                        i += 1
+                        plt.text(t[0] + 100, t[1] + 100, f'Target {target_num + i + 1}', font3)
                     for fail in failure_uav_list:
                         plt.plot(fail[0], fail[1], 'kx', markersize=12)
                     plt.pause(1e-5)
         mission_time = np.round(time.time() - start_time, 3)
-        print(f"mission complete! "
-              f"mission time:{mission_time} sec")
+        print(f"mission complete!!! ")
         input("Press Enter to display the results")
+
+        ' Numerical results '
+        print(" <<<<<<<<<< <<<<<<<<<<< Numerical results >>>>>>>>>>> >>>>>>>>>> ")
+        for u, uav in enumerate(position):
+            for p in range(1, len(uav) - 1):
+                distance[u] += np.linalg.norm(np.subtract(uav[p][:2], uav[p - 1][:2]))
+        objectives = mission_time + np.sum(distance) / np.sum(self.uavs[2])
+        print(f"mission time: {mission_time} \n"
+              f"total distance: {np.sum(distance)} \n"
+              f"objectives: {objectives}"
+              f"distance: {distance}")
 
         ' Animation '
         position_total = max(position, key=len)
@@ -519,19 +528,6 @@ class DynamicSEADMissionSimulator(object):
         plt.subplots_adjust(wspace=.3, hspace=.3)
         plt.show()
 
-        ' Numerical results '
-        print(" <<<<<<<<<< <<<<<<<<<<< Numerical results >>>>>>>>>>> >>>>>>>>>> ")
-        u = 0
-        for uav in position:
-            for p in range(1, len(uav) - 1):
-                distance[u] += np.linalg.norm(np.subtract(uav[p][:2], uav[p - 1][:2]))
-            u += 1
-        objectives = mission_time + np.sum(distance) / np.sum(self.uavs[2])
-        print(f"mission time: {mission_time} \n"
-              f"total distance: {np.sum(distance)} \n"
-              f"objectives: {objectives}"
-              f"distance: {distance}")
-
 
 if __name__ == '__main__':
     targets_sites = [[3100, 2600], [100, 2400]]
@@ -541,5 +537,7 @@ if __name__ == '__main__':
     turning_radii = [200, 250, 300]
     initial_states = [[1000, 200, -np.pi], [1500, 700, np.pi / 2], [3060, 1000, np.pi / 3]]
     base_locations = [[2500, 4000, np.pi / 2] for _ in range(3)]   # same base
-    dynamic_SEAD_mission = DynamicSEADMissionSimulator(targets_sites, uav_id, uav_type, cruise_speed, turning_radii, initial_states, base_locations)
-    dynamic_SEAD_mission.start_simulation(realtime_plot=True, unknown_targets=[[2500, 1800]], uav_failure=[False, False, 55])
+    dynamic_SEAD_mission = DynamicSEADMissionSimulator(targets_sites, uav_id, uav_type, cruise_speed, turning_radii,
+                                                       initial_states, base_locations)
+    dynamic_SEAD_mission.start_simulation(realtime_plot=True,
+                                          unknown_targets=[[2500, 1800]], uav_failure=[False, False, 55])

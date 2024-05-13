@@ -1,13 +1,9 @@
-import math
-import time
-
-import numpy as np
-from matplotlib import pyplot as plt
-from math import sin, cos
-from math import sqrt, pi
+from math import sin, cos, hypot, sqrt, pi
 from numpy import arctan2
 import dubins
-from GA_SEAD_process import *
+import time
+import numpy as np
+from matplotlib import pyplot as plt
 import scipy.linalg as la
 
 
@@ -198,7 +194,7 @@ def trajectory_tracking(car, path):
     previous_time, path_time = time.time(), time.time()
     start = time.time()
 
-    while math.hypot(path[-1][0]-xn, path[-1][1]-yn) >= 0.3 or i != len(path)-1:
+    while hypot(path[-1][0]-xn, path[-1][1]-yn) >= 0.3 or i != len(path)-1:
         angle_between_two_points = angle_between((xn, yn), path[i])
         dt = time.time() - previous_time
         previous_time = time.time()
@@ -260,7 +256,7 @@ def path_following(car, path):
     actual_y = [car.y0]
     previous_time, path_time = 0, time.time()
 
-    while math.hypot(path[-1][0]-xn, path[-1][1]-yn) >= 0.7:
+    while hypot(path[-1][0]-xn, path[-1][1]-yn) >= 0.7:
         if time.time() - previous_time >= 0:
             future_point = np.array([xn+car.velocity*cos(theta)*recede_horizon, yn+car.velocity*sin(theta)*recede_horizon])
             world_record = 1e10
@@ -354,7 +350,7 @@ def path_following_LQR(car, path):
     actual_y = [2]
     previous_time, path_time = 0, time.time()
 
-    while math.hypot(path[-1][0]-xn, path[-1][1]-yn) >= 1:
+    while hypot(path[-1][0]-xn, path[-1][1]-yn) >= 1:
         if time.time() - previous_time >= .1:
             future_point = np.array([xn+car.velocity*cos(theta)*recede_horizon, yn+car.velocity*sin(theta)*recede_horizon])
             world_record = 1e5
@@ -392,7 +388,7 @@ def path_following_LQR(car, path):
             relative_angle = angle_between_two_points - thetan
             error_of_heading = relative_angle if abs(relative_angle) <= np.pi \
                 else (-relative_angle/abs(relative_angle))*(relative_angle + 2*np.pi)
-            tv = car.velocity if math.hypot(path[-1][0]-xn, path[-1][1]-yn) >= 5 else 0.05
+            tv = car.velocity if hypot(path[-1][0]-xn, path[-1][1]-yn) >= 5 else 0.05
             utheta, us = lqr_speed_steering_control(car.Rmin, v, tv, world_record, -error_of_heading, pe, pth_e, lqr_Q, lqr_R, 0.1)
             print(utheta)
             pe, pth_e = world_record, error_of_heading
@@ -532,7 +528,7 @@ def path_following_velocity(car, path):
     actual_y = [car.y0]
     previous_time, path_time = 0, time.time()
 
-    while math.hypot(path[-1][0]-xn, path[-1][1]-yn) >= 1:
+    while hypot(path[-1][0]-xn, path[-1][1]-yn) >= 1:
         if time.time() - previous_time >= .1:
             future_point = np.array([xn+car.velocity*cos(theta)*recede_horizon, yn+car.velocity*sin(theta)*recede_horizon])
             world_record = 1e10

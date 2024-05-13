@@ -5,7 +5,6 @@ import numpy as np
 import copy
 from matplotlib import pyplot as plt
 from dubins__ import *
-# from dubins2cython import *
 import dubins
 
 

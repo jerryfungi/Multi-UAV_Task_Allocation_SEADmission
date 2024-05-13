@@ -1,5 +1,8 @@
 import multiprocessing as mp
-from GA_SEAD_process import *
+import numpy as np
+import time
+from matplotlib import pyplot as plt
+from GA_SEAD_process import GA_SEAD, InformationOfUAVs
 
 ' Parameters '
 monte_carlo_runs = 5
@@ -13,16 +16,16 @@ def DGA(targets, uav_msg, queue, index, iteration, exchange_interval=100):
     population, ans = None, None
     fitness_list = []
     for i in range(int(iteration/exchange_interval)):
-        ans, fitness, population, a = dga.run_GA(exchange_interval, uav_msg, population, distributed=True)
+        ans, population, a = dga.run_GA(exchange_interval, uav_msg, population, distributed=True)
         fitness_list.extend(a)
         for port in share_list:
-            queue[port].put(ans)
+            queue[port].put(ans.chromosome)
         subpop = []
         while not len(subpop) == len(uav_msg[0])-1:
             subpop.append(queue[index].get())
         population.extend(subpop)
-    _, ti, di, pe = dga.chromosome_objectives_evaluate(ans)
-    queue[-1].put([fitness_list, ans, [ti, di, pe]])
+    _, ti, di, pe = dga.objectives_evaluation(ans.chromosome)
+    queue[-1].put([fitness_list, ans.chromosome, [ti, di, pe]])
 
 
 if __name__ == "__main__":
@@ -46,15 +49,20 @@ if __name__ == "__main__":
                   [3500, 450, -75 * np.pi / 180], [5000, 900, -115 * np.pi / 180], [2780, 500, -55 * np.pi / 180],
                   [4000, 600, 85 * np.pi / 180]],
                  [[0, 0, -np.pi / 2] for _ in range(11)]]
-    conditions = {"small scale": [targets[:4],
-                                  [[row[j] for j in range(3)] for row in uavs_info] + [[], [], [], []]],
-                  "median scale": [targets[:7],
-                                   [[row[j] for j in range(6)] for row in uavs_info] + [[], [], [[4, 1], [5, 1]], []]],
-                  "large scale": [targets[:],
-                                  uavs_info + [[], [], [[4, 1], [5, 1], [9, 1], [9, 2], [8, 1], [8, 2], [13, 1]], []]]}
 
-    targets_sites = conditions["small scale"][0]
-    uavs = conditions["small scale"][1]
+    small_scale = {"Targets": targets[:4],
+                   "UAVs": InformationOfUAVs(uavs_info[0][:3], uavs_info[1][:3], uavs_info[4][:3],
+                                             uavs_info[2][:3], uavs_info[3][:3], uavs_info[5][:3])}
+    medium_scale = {"Targets": targets[:4],
+                    "UAVs": InformationOfUAVs(uavs_info[0][:3], uavs_info[1][:3], uavs_info[4][:3], uavs_info[2][:3],
+                                              uavs_info[3][:3], uavs_info[5][:3], tasks_completed=[[4, 1], [5, 1]])}
+    large_scale = {"Targets": targets[:4],
+                   "UAVs": InformationOfUAVs(uavs_info[0][:3], uavs_info[1][:3], uavs_info[4][:3],
+                                             uavs_info[2][:3], uavs_info[3][:3], uavs_info[5][:3],
+                                             tasks_completed=[[4, 1], [5, 1], [9, 1], [9, 2], [8, 1], [8, 2], [13, 1]])}
+
+    targets_sites = small_scale["Targets"]
+    uavs = small_scale["UAVs"]
 
     print('Start simulations')
     print('Decentralized parallel genetic algorithm operating ------')
@@ -88,11 +96,11 @@ if __name__ == "__main__":
     cga = GA_SEAD(targets_sites, population_size)
     for j in range(monte_carlo_runs):
         start = time.time()
-        solution, fitness_value, ga_population, b = cga.run_GA(generation, uavs)
+        solution, ga_population, b = cga.run_GA(generation, uavs)
         process_time[1].append(time.time() - start)
         convergence[1] = list(np.add(convergence[1], b))
-        object_value[1].append(1/fitness_value)
-        _, t, d, p = cga.chromosome_objectives_evaluate(solution)
+        object_value[1].append(1/solution.fitness_value)
+        _, t, d, p = cga.objectives_evaluation(solution)
         mission_time[1].append(t)
         total_distance[1].append(d)
         penalty[1].append(p)
@@ -100,11 +108,11 @@ if __name__ == "__main__":
     print('Random search method operating ------')
     for j in range(monte_carlo_runs):
         start = time.time()
-        solution, fitness_value, ga_population, d = cga.run_RS(generation, uavs)
+        solution, ga_population, d = cga.run_RS(generation, uavs)
         process_time[0].append(time.time() - start)
         convergence[0] = list(np.add(convergence[0], d))
-        object_value[0].append(1/fitness_value)
-        _, t, d, p = cga.chromosome_objectives_evaluate(solution)
+        object_value[0].append(1/solution.fitness_value)
+        _, t, d, p = cga.objectives_evaluation(solution)
         mission_time[0].append(t)
         total_distance[0].append(d)
         penalty[0].append(p)
@@ -136,8 +144,7 @@ if __name__ == "__main__":
     legend = ['RS', 'GA', 'DPGA']
 
     for k in range(3):
-        convergence[k] = list(np.divide(convergence[k], monte_carlo_runs))
-        convergence[k] = list(np.divide(convergence[k], convergence[k][0]))
+        convergence[k] = list(np.divide(convergence[k], monte_carlo_runs * convergence[k][0]))
         convergence[k] = [v ** (1 / 2) for v in convergence[k]]
         plt.plot([g for g in range(1, generation + 1)], convergence[k], '-', label=legend[k], linewidth=0.8)
     plt.legend(prop=font2)

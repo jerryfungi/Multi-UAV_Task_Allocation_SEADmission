@@ -1,14 +1,10 @@
 import random
-from random import randrange
 import time
 import math
 from matplotlib import pyplot as plt
-import numpy as np
-import multiprocessing as mp
 
 
 class GA_vrp(object):
-
     def __init__(self, targets_sites, uavs_sites):
         # input data
         self.targets_sites = targets_sites
